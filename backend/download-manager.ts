@@ -1,6 +1,6 @@
 import { mkdir } from 'node:fs/promises';
+import type { DownloadItem, DownloadProgress, WsMessage } from '../shared/types';
 import { env } from './env';
-import type { DownloadItem, DownloadProgress, WsMessage } from './types';
 import { startDownload } from './ytdlp';
 
 type BroadcastFn = (msg: WsMessage) => void;
@@ -18,6 +18,11 @@ export class DownloadManager {
   constructor(maxConcurrent: number, broadcast: BroadcastFn) {
     this.maxConcurrent = maxConcurrent;
     this.broadcast = broadcast;
+  }
+
+  /** Number of items in the pending queue (excludes active downloads). */
+  queueSize(): number {
+    return this.downloads.size;
   }
 
   add(url: string, formatId: string, title: string, thumbnail: string | null, ext: string): string {
@@ -69,16 +74,13 @@ export class DownloadManager {
     return Array.from(this.downloads.values()).sort((a, b) => b.createdAt - a.createdAt);
   }
 
-  getById(id: string): DownloadItem | undefined {
-    return this.downloads.get(id);
-  }
-
   clearCompleted(): void {
     for (const [id, item] of this.downloads) {
       if (item.status === 'completed' || item.status === 'failed' || item.status === 'cancelled') {
         this.downloads.delete(id);
       }
     }
+    this.broadcastAll();
   }
 
   killAll(): void {
@@ -112,7 +114,14 @@ export class DownloadManager {
   }
 
   private async startNext(id: string, item: DownloadItem): Promise<void> {
-    await this.ensureDir();
+    try {
+      await this.ensureDir();
+    } catch (err) {
+      item.status = 'failed';
+      item.error = err instanceof Error ? err.message : 'Failed to create download directory.';
+      this.broadcastAll();
+      return;
+    }
 
     item.status = 'downloading';
     this.broadcastAll();

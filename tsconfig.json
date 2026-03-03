@@ -2,6 +2,7 @@
   "include": [
     ".react-router/types/**/*",
     "app",
+    "shared",
     "backend",
     "scripts",
     "vite.config.ts",

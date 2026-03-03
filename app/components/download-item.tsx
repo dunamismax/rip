@@ -1,4 +1,4 @@
-import type { DownloadItem as DownloadItemType } from '~/lib/types';
+import type { DownloadItem as DownloadItemType, DownloadStatus } from '~/lib/types';
 import { cn, formatBytes, formatEta, formatSpeed } from '~/lib/utils';
 
 type DownloadItemProps = {
@@ -6,7 +6,7 @@ type DownloadItemProps = {
   onCancel: (id: string) => void;
 };
 
-const statusColors: Record<string, string> = {
+const statusColors: Record<DownloadStatus, string> = {
   queued: 'bg-[var(--ovd-warning)] text-black',
   downloading: 'bg-[var(--ovd-accent)] text-white',
   processing: 'bg-[var(--ovd-accent-soft)] text-white',

@@ -2,10 +2,10 @@ import { Hono } from 'hono';
 import { createBunWebSocket } from 'hono/bun';
 import { cors } from 'hono/cors';
 import type { WSContext } from 'hono/ws';
+import type { WsMessage } from '../shared/types';
 import { DownloadManager } from './download-manager';
 import { env } from './env';
 import { createRoutes } from './routes';
-import type { WsMessage } from './types';
 import { checkFfmpeg, checkYtdlp } from './ytdlp';
 
 // ---------------------------------------------------------------------------
@@ -39,7 +39,27 @@ const manager = new DownloadManager(env.MAX_CONCURRENT_DOWNLOADS, broadcast);
 
 const app = new Hono();
 
-app.use('/api/*', cors());
+// CORS — restrict to the frontend origin in production
+const ALLOWED_ORIGIN = env.NODE_ENV === 'production' ? `http://localhost:${env.PORT}` : '*';
+
+app.use(
+  '/api/*',
+  cors({
+    origin: ALLOWED_ORIGIN,
+    allowMethods: ['GET', 'POST', 'DELETE'],
+    maxAge: 3600,
+  }),
+);
+
+// Body size limit — reject payloads larger than 1 MB
+const MAX_BODY_BYTES = 1024 * 1024;
+app.use('/api/*', async (c, next) => {
+  const contentLength = c.req.header('content-length');
+  if (contentLength && Number.parseInt(contentLength, 10) > MAX_BODY_BYTES) {
+    return c.json({ error: 'Request body too large.' }, 413);
+  }
+  await next();
+});
 
 // API routes
 const api = createRoutes(manager);
