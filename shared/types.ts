@@ -60,6 +60,4 @@ export type DownloadItem = {
 
 export type WsMessage =
   | { type: 'progress'; downloadId: string; progress: DownloadProgress }
-  | { type: 'status'; downloadId: string; status: DownloadStatus; error?: string }
-  | { type: 'completed'; downloadId: string; outputPath: string }
   | { type: 'downloads'; downloads: DownloadItem[] };

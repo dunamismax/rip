@@ -1,5 +1,5 @@
+import type { DownloadProgress, VideoFormat, VideoMetadata } from '../shared/types';
 import { env } from './env';
-import type { DownloadProgress, VideoFormat, VideoMetadata } from './types';
 
 // ---------------------------------------------------------------------------
 // Metadata extraction
@@ -23,7 +23,12 @@ export async function extractMetadata(url: string): Promise<VideoMetadata> {
     throw new Error(msg);
   }
 
-  const raw = JSON.parse(stdout);
+  let raw: Record<string, unknown>;
+  try {
+    raw = JSON.parse(stdout);
+  } catch {
+    throw new Error('Failed to parse yt-dlp output. The response was not valid JSON.');
+  }
   return mapMetadata(raw);
 }
 
