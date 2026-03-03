@@ -1,7 +1,7 @@
 const BASE = 'http://localhost:3001';
 
 async function smoke() {
-  console.log('open-video-downloader smoke test\n');
+  console.log('rip smoke test\n');
   let passed = 0;
   let failed = 0;
 

@@ -102,7 +102,7 @@ async function start() {
     websocket,
   });
 
-  console.log(`open-video-downloader API listening on http://localhost:${server.port}`);
+  console.log(`rip API listening on http://localhost:${server.port}`);
 
   process.on('SIGINT', () => {
     console.log('\nShutting down...');

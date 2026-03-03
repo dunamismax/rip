@@ -2,7 +2,7 @@ import { env } from '../backend/env';
 import { checkFfmpeg, checkYtdlp } from '../backend/ytdlp';
 
 async function doctor() {
-  console.log('open-video-downloader doctor\n');
+  console.log('rip doctor\n');
   console.log(`NODE_ENV           ${env.NODE_ENV}`);
   console.log(`PORT               ${env.PORT}`);
   console.log(`DOWNLOAD_DIR       ${env.DOWNLOAD_DIR}`);

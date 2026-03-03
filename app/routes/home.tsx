@@ -59,7 +59,7 @@ export default function Home() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <h1 className="text-xl font-bold text-[var(--ovd-text)]">Open Video Downloader</h1>
+          <h1 className="text-xl font-bold text-[var(--ovd-text)]">Rip</h1>
         </div>
         <div className="flex items-center gap-2">
           <span

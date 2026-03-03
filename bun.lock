@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "open-video-downloader",
+      "name": "rip",
       "dependencies": {
         "@react-router/node": "^7.13.1",
         "@tanstack/react-query": "^5.90.21",

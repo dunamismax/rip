@@ -1,4 +1,4 @@
-# Open Video Downloader
+# Rip
 
 A self-hosted web app for downloading videos from 1700+ sites. Paste a URL, pick a format, and download. Powered by [yt-dlp](https://github.com/yt-dlp/yt-dlp) and [ffmpeg](https://ffmpeg.org).
 
@@ -28,8 +28,8 @@ bun run doctor
 ## Quick Start
 
 ```bash
-git clone https://github.com/dunamismax/open-video-downloader.git
-cd open-video-downloader
+git clone https://github.com/dunamismax/rip.git
+cd rip
 bun install
 bun run dev
 ```
@@ -58,7 +58,7 @@ Environment variables (optional — defaults work out of the box):
 | Variable | Default | Description |
 |---|---|---|
 | `PORT` | `3001` | API server port |
-| `DOWNLOAD_DIR` | `~/Downloads/OpenVideoDownloader` | Where downloaded files are saved |
+| `DOWNLOAD_DIR` | `~/Downloads/Rip` | Where downloaded files are saved |
 | `MAX_CONCURRENT_DOWNLOADS` | `3` | Max simultaneous downloads |
 | `YTDLP_PATH` | `yt-dlp` | Path to yt-dlp binary |
 
@@ -72,7 +72,7 @@ Browser (React SPA)
 Hono API (Bun.serve)
     ↕ subprocess (spawn)
 yt-dlp + ffmpeg
-    → ~/Downloads/OpenVideoDownloader/
+    → ~/Downloads/Rip/
 ```
 
 ### Stack
