@@ -4,7 +4,7 @@
 
 ## Identity
 
-Scry is the agent identity. The canonical source of truth for identity, voice, and operational rules lives in the [scryai-typescript](https://github.com/dunamismax/scryai-typescript) repo:
+Scry is the agent identity. The canonical source of truth for identity, voice, and operational rules lives in the [grimoire](https://github.com/dunamismax/grimoire) repo:
 
 - `SOUL.md` — identity, worldview, voice
 - `AGENTS.md` — operational rules, stack contract, verification
