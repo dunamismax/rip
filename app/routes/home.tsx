@@ -59,13 +59,13 @@ export default function Home() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <h1 className="text-xl font-bold text-[var(--ovd-text)]">Rip</h1>
+          <h1 className="text-xl font-bold text-[var(--rip-text)]">Rip</h1>
         </div>
         <div className="flex items-center gap-2">
           <span
             className={cn(
               'h-2 w-2 rounded-full transition-colors',
-              connected ? 'bg-[var(--ovd-success)]' : 'bg-[var(--ovd-error)]',
+              connected ? 'bg-[var(--rip-success)]' : 'bg-[var(--rip-error)]',
             )}
             title={connected ? 'Connected' : 'Disconnected'}
           />
@@ -80,8 +80,8 @@ export default function Home() {
 
       {/* Extract error */}
       {extractError && (
-        <div className="mt-4 rounded-lg border border-[var(--ovd-error)] bg-[var(--ovd-error)]/10 p-3">
-          <p className="text-sm text-[var(--ovd-error)]">{extractError}</p>
+        <div className="mt-4 rounded-lg border border-[var(--rip-error)] bg-[var(--rip-error)]/10 p-3">
+          <p className="text-sm text-[var(--rip-error)]">{extractError}</p>
         </div>
       )}
 
@@ -107,7 +107,7 @@ export default function Home() {
       </div>
 
       {/* Footer */}
-      <div className="mt-12 pb-6 text-center text-xs text-[var(--ovd-muted)]">
+      <div className="mt-12 pb-6 text-center text-xs text-[var(--rip-muted)]">
         Powered by yt-dlp &middot; Supports 1700+ sites &middot; MIT License
       </div>
     </div>

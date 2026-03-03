@@ -18,10 +18,10 @@ export function FormatSelector({ formats, selected, onSelect }: FormatSelectorPr
 
   return (
     <div className="space-y-3">
-      <p className="text-xs font-medium uppercase tracking-wider text-[var(--ovd-muted)]">Format</p>
+      <p className="text-xs font-medium uppercase tracking-wider text-[var(--rip-muted)]">Format</p>
       {groups.map((group) => (
         <div key={group.label}>
-          <p className="mb-1 text-xs text-[var(--ovd-muted)]">{group.label}</p>
+          <p className="mb-1 text-xs text-[var(--rip-muted)]">{group.label}</p>
           <div className="flex flex-wrap gap-2">
             {group.formats.map((f) => {
               const isSelected = selected === f.formatId;
@@ -34,8 +34,8 @@ export function FormatSelector({ formats, selected, onSelect }: FormatSelectorPr
                   className={cn(
                     'rounded-md border px-3 py-1.5 text-xs transition-all',
                     isSelected
-                      ? 'border-[var(--ovd-accent)] bg-[var(--ovd-accent)] text-white'
-                      : 'border-[var(--ovd-border)] text-[var(--ovd-text)] hover:border-[var(--ovd-accent)]',
+                      ? 'border-[var(--rip-accent)] bg-[var(--rip-accent)] text-white'
+                      : 'border-[var(--rip-border)] text-[var(--rip-text)] hover:border-[var(--rip-accent)]',
                   )}
                 >
                   <span className="font-medium">{f.resolution ?? f.formatNote ?? f.ext}</span>
@@ -71,22 +71,21 @@ function groupFormats(formats: VideoFormat[]): FormatGroup[] {
     });
   }
 
-  // Best video + best audio (common yt-dlp pattern)
-  if (combined.length === 0) {
-    const videoOnly = formats
-      .filter((f) => f.hasVideo && !f.hasAudio)
-      .sort((a, b) => (b.tbr ?? 0) - (a.tbr ?? 0));
-    const byRes = new Map<string, VideoFormat>();
-    for (const f of videoOnly) {
-      const key = f.resolution ?? 'unknown';
-      if (!byRes.has(key)) byRes.set(key, f);
-    }
-    if (byRes.size > 0) {
-      groups.push({
-        label: 'Video (best audio auto-merged)',
-        formats: Array.from(byRes.values()),
-      });
-    }
+  // Video-only formats (higher-res options like 4K that aren't available as combined)
+  const combinedResolutions = new Set(combined.map((f) => f.resolution ?? 'unknown'));
+  const videoOnly = formats
+    .filter((f) => f.hasVideo && !f.hasAudio)
+    .sort((a, b) => (b.tbr ?? 0) - (a.tbr ?? 0));
+  const byRes = new Map<string, VideoFormat>();
+  for (const f of videoOnly) {
+    const key = f.resolution ?? 'unknown';
+    if (!byRes.has(key) && !combinedResolutions.has(key)) byRes.set(key, f);
+  }
+  if (byRes.size > 0) {
+    groups.push({
+      label: 'Video (best audio auto-merged)',
+      formats: Array.from(byRes.values()),
+    });
   }
 
   // Audio-only

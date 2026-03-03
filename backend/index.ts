@@ -124,18 +124,20 @@ async function start() {
 
   console.log(`rip API listening on http://localhost:${server.port}`);
 
-  process.on('SIGINT', () => {
-    console.log('\nShutting down...');
+  let shuttingDown = false;
+  const shutdown = async (signal: string) => {
+    if (shuttingDown) return;
+    shuttingDown = true;
+    console.log(`\n${signal} received — draining...`);
     manager.killAll();
-    server.stop();
+    manager.dispose();
+    server.stop(true);
+    await new Promise((r) => setTimeout(r, 5000));
     process.exit(0);
-  });
+  };
 
-  process.on('SIGTERM', () => {
-    manager.killAll();
-    server.stop();
-    process.exit(0);
-  });
+  process.on('SIGINT', () => shutdown('SIGINT'));
+  process.on('SIGTERM', () => shutdown('SIGTERM'));
 }
 
 start();

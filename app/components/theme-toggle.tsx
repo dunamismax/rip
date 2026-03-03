@@ -10,7 +10,7 @@ export function ThemeToggle() {
       onClick={toggle}
       className={cn(
         'rounded-lg p-2 transition-colors',
-        'hover:bg-[var(--ovd-border)] text-[var(--ovd-muted)] hover:text-[var(--ovd-text)]',
+        'hover:bg-[var(--rip-border)] text-[var(--rip-muted)] hover:text-[var(--rip-text)]',
       )}
       aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
     >

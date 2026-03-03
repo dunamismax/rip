@@ -21,7 +21,7 @@ export function VideoCard({ metadata, onDownload, onDismiss, downloading }: Vide
     <div
       className={cn(
         'rounded-xl border p-4 transition-all',
-        'border-[var(--ovd-border)] bg-[var(--ovd-surface)]',
+        'border-[var(--rip-border)] bg-[var(--rip-surface)]',
       )}
     >
       <div className="flex gap-4">
@@ -39,13 +39,13 @@ export function VideoCard({ metadata, onDownload, onDismiss, downloading }: Vide
         {/* Info */}
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
-            <h3 className="line-clamp-2 text-sm font-semibold text-[var(--ovd-text)]">
+            <h3 className="line-clamp-2 text-sm font-semibold text-[var(--rip-text)]">
               {metadata.title}
             </h3>
             <button
               type="button"
               onClick={onDismiss}
-              className="shrink-0 rounded p-1 text-[var(--ovd-muted)] hover:text-[var(--ovd-text)]"
+              className="shrink-0 rounded p-1 text-[var(--rip-muted)] hover:text-[var(--rip-text)]"
               aria-label="Dismiss"
             >
               <svg
@@ -61,11 +61,11 @@ export function VideoCard({ metadata, onDownload, onDismiss, downloading }: Vide
             </button>
           </div>
 
-          <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-[var(--ovd-muted)]">
+          <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-[var(--rip-muted)]">
             {metadata.uploader && <span>{metadata.uploader}</span>}
             {metadata.duration != null && <span>{formatDuration(metadata.duration)}</span>}
             {metadata.viewCount != null && <span>{formatViewCount(metadata.viewCount)} views</span>}
-            <span className="rounded bg-[var(--ovd-border)] px-1.5 py-0.5 text-[10px] uppercase">
+            <span className="rounded bg-[var(--rip-border)] px-1.5 py-0.5 text-[10px] uppercase">
               {metadata.extractor}
             </span>
           </div>
@@ -98,7 +98,7 @@ export function VideoCard({ metadata, onDownload, onDismiss, downloading }: Vide
               disabled={downloading}
               className={cn(
                 'rounded-lg px-5 py-2 text-sm font-medium text-white transition-colors',
-                'bg-[var(--ovd-accent)] hover:bg-[var(--ovd-accent-hover)]',
+                'bg-[var(--rip-accent)] hover:bg-[var(--rip-accent-hover)]',
                 'disabled:opacity-50 disabled:cursor-not-allowed',
               )}
             >

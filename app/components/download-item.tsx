@@ -7,12 +7,12 @@ type DownloadItemProps = {
 };
 
 const statusColors: Record<DownloadStatus, string> = {
-  queued: 'bg-[var(--ovd-warning)] text-black',
-  downloading: 'bg-[var(--ovd-accent)] text-white',
-  processing: 'bg-[var(--ovd-accent-soft)] text-white',
-  completed: 'bg-[var(--ovd-success)] text-white',
-  failed: 'bg-[var(--ovd-error)] text-white',
-  cancelled: 'bg-[var(--ovd-muted)] text-white',
+  queued: 'bg-[var(--rip-warning)] text-black',
+  downloading: 'bg-[var(--rip-accent)] text-white',
+  processing: 'bg-[var(--rip-accent-soft)] text-white',
+  completed: 'bg-[var(--rip-success)] text-white',
+  failed: 'bg-[var(--rip-error)] text-white',
+  cancelled: 'bg-[var(--rip-muted)] text-white',
 };
 
 export function DownloadItemRow({ item, onCancel }: DownloadItemProps) {
@@ -22,7 +22,7 @@ export function DownloadItemRow({ item, onCancel }: DownloadItemProps) {
     <div
       className={cn(
         'rounded-lg border p-3 transition-all',
-        'border-[var(--ovd-border)] bg-[var(--ovd-surface)]',
+        'border-[var(--rip-border)] bg-[var(--rip-surface)]',
       )}
     >
       <div className="flex items-start gap-3">
@@ -38,7 +38,7 @@ export function DownloadItemRow({ item, onCancel }: DownloadItemProps) {
         {/* Content */}
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <h4 className="truncate text-sm font-medium text-[var(--ovd-text)]">{item.title}</h4>
+            <h4 className="truncate text-sm font-medium text-[var(--rip-text)]">{item.title}</h4>
             <span
               className={cn(
                 'shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium uppercase',
@@ -52,13 +52,13 @@ export function DownloadItemRow({ item, onCancel }: DownloadItemProps) {
           {/* Progress bar for active downloads */}
           {item.status === 'downloading' && (
             <div className="mt-2">
-              <div className="h-1.5 w-full overflow-hidden rounded-full bg-[var(--ovd-border)]">
+              <div className="h-1.5 w-full overflow-hidden rounded-full bg-[var(--rip-border)]">
                 <div
-                  className="h-full rounded-full bg-[var(--ovd-accent)] transition-all duration-300"
+                  className="h-full rounded-full bg-[var(--rip-accent)] transition-all duration-300"
                   style={{ width: `${item.progress.percentage}%` }}
                 />
               </div>
-              <div className="mt-1 flex justify-between text-[10px] text-[var(--ovd-muted)]">
+              <div className="mt-1 flex justify-between text-[10px] text-[var(--rip-muted)]">
                 <span>
                   {item.progress.percentage.toFixed(1)}%
                   {item.progress.totalBytes ? ` of ${formatBytes(item.progress.totalBytes)}` : ''}
@@ -72,12 +72,12 @@ export function DownloadItemRow({ item, onCancel }: DownloadItemProps) {
 
           {/* Error message */}
           {item.status === 'failed' && item.error && (
-            <p className="mt-1 text-xs text-[var(--ovd-error)]">{item.error}</p>
+            <p className="mt-1 text-xs text-[var(--rip-error)]">{item.error}</p>
           )}
 
           {/* Output path for completed */}
           {item.status === 'completed' && item.outputPath && (
-            <p className="mt-1 truncate text-xs text-[var(--ovd-muted)]">{item.outputPath}</p>
+            <p className="mt-1 truncate text-xs text-[var(--rip-muted)]">{item.outputPath}</p>
           )}
         </div>
 
@@ -86,7 +86,7 @@ export function DownloadItemRow({ item, onCancel }: DownloadItemProps) {
           <button
             type="button"
             onClick={() => onCancel(item.id)}
-            className="shrink-0 rounded p-1 text-[var(--ovd-muted)] hover:text-[var(--ovd-error)] transition-colors"
+            className="shrink-0 rounded p-1 text-[var(--rip-muted)] hover:text-[var(--rip-error)] transition-colors"
             aria-label="Cancel download"
           >
             <svg

@@ -4,38 +4,38 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --ovd-bg: #ffffff;
-  --ovd-surface: #f8fafc;
-  --ovd-panel: rgba(255, 255, 255, 0.9);
-  --ovd-border: rgba(0, 0, 0, 0.1);
-  --ovd-text: #1a1a2e;
-  --ovd-muted: #6b7280;
-  --ovd-accent: #6366f1;
-  --ovd-accent-hover: #4f46e5;
-  --ovd-accent-soft: #818cf8;
-  --ovd-success: #22c55e;
-  --ovd-error: #ef4444;
-  --ovd-warning: #f59e0b;
+  --rip-bg: #ffffff;
+  --rip-surface: #f8fafc;
+  --rip-panel: rgba(255, 255, 255, 0.9);
+  --rip-border: rgba(0, 0, 0, 0.1);
+  --rip-text: #1a1a2e;
+  --rip-muted: #6b7280;
+  --rip-accent: #6366f1;
+  --rip-accent-hover: #4f46e5;
+  --rip-accent-soft: #818cf8;
+  --rip-success: #22c55e;
+  --rip-error: #ef4444;
+  --rip-warning: #f59e0b;
 }
 
 .dark {
-  --ovd-bg: #0a0a14;
-  --ovd-surface: #12121f;
-  --ovd-panel: rgba(18, 18, 31, 0.85);
-  --ovd-border: rgba(255, 255, 255, 0.08);
-  --ovd-text: #e2e8f0;
-  --ovd-muted: #94a3b8;
-  --ovd-accent: #818cf8;
-  --ovd-accent-hover: #6366f1;
-  --ovd-accent-soft: #a5b4fc;
-  --ovd-success: #4ade80;
-  --ovd-error: #f87171;
-  --ovd-warning: #fbbf24;
+  --rip-bg: #0a0a14;
+  --rip-surface: #12121f;
+  --rip-panel: rgba(18, 18, 31, 0.85);
+  --rip-border: rgba(255, 255, 255, 0.08);
+  --rip-text: #e2e8f0;
+  --rip-muted: #94a3b8;
+  --rip-accent: #818cf8;
+  --rip-accent-hover: #6366f1;
+  --rip-accent-soft: #a5b4fc;
+  --rip-success: #4ade80;
+  --rip-error: #f87171;
+  --rip-warning: #fbbf24;
 }
 
 html {
-  background: var(--ovd-bg);
-  color: var(--ovd-text);
+  background: var(--rip-bg);
+  color: var(--rip-text);
 }
 
 body {

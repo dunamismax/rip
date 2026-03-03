@@ -5,7 +5,10 @@ import { startDownload } from './ytdlp';
 
 type BroadcastFn = (msg: WsMessage) => void;
 
-const downloadDir = env.DOWNLOAD_DIR.replace(/^~/, process.env.HOME ?? '');
+const homeDir = process.env.HOME ?? '/tmp';
+const downloadDir = env.DOWNLOAD_DIR.replace(/^~/, homeDir);
+
+const EXPIRY_MS = 60 * 60 * 1000; // 1 hour
 
 export class DownloadManager {
   private downloads = new Map<string, DownloadItem>();
@@ -14,10 +17,32 @@ export class DownloadManager {
   private maxConcurrent: number;
   private broadcast: BroadcastFn;
   private dirReady = false;
+  private expiryTimer: ReturnType<typeof setInterval>;
 
   constructor(maxConcurrent: number, broadcast: BroadcastFn) {
     this.maxConcurrent = maxConcurrent;
     this.broadcast = broadcast;
+    this.expiryTimer = setInterval(() => this.expireOld(), 60_000);
+  }
+
+  dispose(): void {
+    clearInterval(this.expiryTimer);
+  }
+
+  private expireOld(): void {
+    const now = Date.now();
+    let changed = false;
+    for (const [id, item] of this.downloads) {
+      if (
+        (item.status === 'completed' || item.status === 'failed' || item.status === 'cancelled') &&
+        item.completedAt &&
+        now - item.completedAt >= EXPIRY_MS
+      ) {
+        this.downloads.delete(id);
+        changed = true;
+      }
+    }
+    if (changed) this.broadcastAll();
   }
 
   /** Number of items in the pending queue (excludes active downloads). */
@@ -65,6 +90,7 @@ export class DownloadManager {
     if (queueIdx >= 0) this.queue.splice(queueIdx, 1);
 
     item.status = 'cancelled';
+    item.completedAt = Date.now();
     this.broadcastAll();
     this.processQueue();
     return true;
@@ -118,6 +144,7 @@ export class DownloadManager {
       await this.ensureDir();
     } catch (err) {
       item.status = 'failed';
+      item.completedAt = Date.now();
       item.error = err instanceof Error ? err.message : 'Failed to create download directory.';
       this.broadcastAll();
       return;
@@ -150,6 +177,7 @@ export class DownloadManager {
       const currentStatus = this.downloads.get(id)?.status;
       if (currentStatus !== 'cancelled') {
         item.status = 'failed';
+        item.completedAt = Date.now();
         item.error = err instanceof Error ? err.message : 'Download failed.';
         this.broadcastAll();
       }

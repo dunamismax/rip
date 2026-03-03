@@ -56,9 +56,9 @@ export function UrlInput({ onExtract, loading }: UrlInputProps) {
             disabled={loading}
             className={cn(
               'w-full rounded-lg border px-4 py-3 text-sm transition-colors',
-              'bg-[var(--ovd-surface)] border-[var(--ovd-border)] text-[var(--ovd-text)]',
-              'placeholder:text-[var(--ovd-muted)]',
-              'focus:border-[var(--ovd-accent)] focus:outline-none focus:ring-1 focus:ring-[var(--ovd-accent)]',
+              'bg-[var(--rip-surface)] border-[var(--rip-border)] text-[var(--rip-text)]',
+              'placeholder:text-[var(--rip-muted)]',
+              'focus:border-[var(--rip-accent)] focus:outline-none focus:ring-1 focus:ring-[var(--rip-accent)]',
               'disabled:opacity-50',
             )}
           />
@@ -68,7 +68,7 @@ export function UrlInput({ onExtract, loading }: UrlInputProps) {
             disabled={loading}
             className={cn(
               'absolute top-1/2 right-2 -translate-y-1/2 rounded-md px-2 py-1 text-xs transition-colors',
-              'text-[var(--ovd-muted)] hover:text-[var(--ovd-text)] hover:bg-[var(--ovd-border)]',
+              'text-[var(--rip-muted)] hover:text-[var(--rip-text)] hover:bg-[var(--rip-border)]',
               'disabled:opacity-50',
             )}
           >
@@ -81,7 +81,7 @@ export function UrlInput({ onExtract, loading }: UrlInputProps) {
           disabled={loading || !url.trim()}
           className={cn(
             'rounded-lg px-6 py-3 text-sm font-medium text-white transition-colors',
-            'bg-[var(--ovd-accent)] hover:bg-[var(--ovd-accent-hover)]',
+            'bg-[var(--rip-accent)] hover:bg-[var(--rip-accent-hover)]',
             'disabled:opacity-50 disabled:cursor-not-allowed',
           )}
         >
@@ -114,7 +114,7 @@ export function UrlInput({ onExtract, loading }: UrlInputProps) {
           )}
         </button>
       </div>
-      {error && <p className="mt-2 text-sm text-[var(--ovd-error)]">{error}</p>}
+      {error && <p className="mt-2 text-sm text-[var(--rip-error)]">{error}</p>}
     </form>
   );
 }

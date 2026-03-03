@@ -79,7 +79,7 @@ function mapFormat(raw: Record<string, unknown>): VideoFormat {
 // Download with progress
 // ---------------------------------------------------------------------------
 
-const PROGRESS_PREFIX = 'ovd-progress:';
+const PROGRESS_PREFIX = 'rip-progress:';
 
 export type DownloadHandle = {
   proc: ReturnType<typeof Bun.spawn>;
@@ -97,7 +97,7 @@ export type DownloadOptions = {
 export function startDownload(opts: DownloadOptions): DownloadHandle {
   const outputTemplate = `${opts.outputDir}/%(title).200s [%(id)s].%(ext)s`;
 
-  const OUTPUT_PREFIX = 'ovd-output:';
+  const OUTPUT_PREFIX = 'rip-output:';
 
   const args = [
     env.YTDLP_PATH,

@@ -18,7 +18,7 @@ export function DownloadQueue({ downloads, onCancel, onClearCompleted }: Downloa
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-[var(--ovd-text)]">
+        <h2 className="text-sm font-semibold text-[var(--rip-text)]">
           Downloads ({downloads.length})
         </h2>
         {hasFinished && (
@@ -27,7 +27,7 @@ export function DownloadQueue({ downloads, onCancel, onClearCompleted }: Downloa
             onClick={onClearCompleted}
             className={cn(
               'rounded-md px-3 py-1 text-xs transition-colors',
-              'text-[var(--ovd-muted)] hover:text-[var(--ovd-text)] hover:bg-[var(--ovd-border)]',
+              'text-[var(--rip-muted)] hover:text-[var(--rip-text)] hover:bg-[var(--rip-border)]',
             )}
           >
             Clear finished
