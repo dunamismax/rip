@@ -39,8 +39,8 @@ const manager = new DownloadManager(env.MAX_CONCURRENT_DOWNLOADS, broadcast);
 
 const app = new Hono();
 
-// CORS — restrict to the frontend origin in production
-const ALLOWED_ORIGIN = env.NODE_ENV === 'production' ? `http://localhost:${env.PORT}` : '*';
+// CORS — restrict to the frontend origin in production.
+const ALLOWED_ORIGIN = env.NODE_ENV === 'production' ? env.WEB_ORIGIN : '*';
 
 app.use(
   '/api/*',

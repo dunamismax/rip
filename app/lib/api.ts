@@ -1,11 +1,9 @@
+import { getApiUrl } from './network';
+
 type ApiFetchOptions = {
   body?: Record<string, unknown>;
   method?: string;
 };
-
-// Vite replaces import.meta.env.VITE_* at build time. Set VITE_RIP_API_URL to override.
-const viteEnv = (import.meta as unknown as { env?: Record<string, string> }).env;
-const API_BASE = viteEnv?.VITE_RIP_API_URL ?? '';
 
 export async function apiFetch<T>(path: string, options: ApiFetchOptions = {}): Promise<T> {
   const init: RequestInit = {
@@ -17,7 +15,7 @@ export async function apiFetch<T>(path: string, options: ApiFetchOptions = {}): 
     init.body = JSON.stringify(options.body);
   }
 
-  const response = await fetch(`${API_BASE}${path}`, init);
+  const response = await fetch(getApiUrl(path), init);
 
   if (!response.ok) {
     const data = await response.json().catch(() => null);

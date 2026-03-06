@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { getWebSocketUrl } from '~/lib/network';
 import type { WsMessage } from '~/lib/types';
 
 type UseWebSocketOptions = {
@@ -17,8 +18,7 @@ export function useWebSocket({ onMessage }: UseWebSocketOptions) {
   onMessageRef.current = onMessage;
 
   const connect = useCallback(() => {
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const ws = new WebSocket(`${protocol}//${window.location.host}/api/ws`);
+    const ws = new WebSocket(getWebSocketUrl('/api/ws'));
 
     ws.onopen = () => {
       setConnected(true);
