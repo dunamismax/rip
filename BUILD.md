@@ -1,7 +1,7 @@
 # rip — Build Tracker
 
 **Status:** Phase 1 — UX & Reliability Polish
-**Last Updated:** 2026-03-04
+**Last Updated:** 2026-03-06
 **Branch:** `main`
 
 ---
@@ -77,6 +77,7 @@ rip/
 - [ ] yt-dlp auto-update: check for yt-dlp updates on server start or via CLI command
 - [ ] Audio-only mode: extract audio (MP3/M4A) as a first-class format option
 - [ ] Playlist support: detect playlists, let user pick individual videos or download all
+- [x] Production start path serves the SPA correctly and reaches the API in production
 
 ### Phase 2 — Power Features
 
@@ -100,12 +101,12 @@ rip/
 ## Verification Snapshot
 
 ```
-bun run lint      ✅  (31 files, no issues)
-bun run typecheck ✅
+bun run lint      ⏳  pending current fix set
+bun run typecheck ⏳  pending current fix set
 bun run smoke     — (smoke test runner exists)
 ```
 
-Last verified: 2026-03-04
+Last verified: 2026-03-06 (in progress)
 
 ---
 

@@ -34,7 +34,7 @@ bun install
 bun run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000). The API runs on port 3001 (proxied automatically by Vite in dev).
+Open [http://localhost:3000](http://localhost:3000). The API runs on port 3001. In dev, React Router proxies `/api` to the API server; in production, the SPA talks to the API directly on port 3001 by default.
 
 ## Commands
 
@@ -44,7 +44,7 @@ Open [http://localhost:3000](http://localhost:3000). The API runs on port 3001 (
 | `bun run dev:web` | Start only the Vite dev server |
 | `bun run dev:api` | Start only the API server (with watch) |
 | `bun run build` | Production build |
-| `bun run start` | Start production servers |
+| `bun run start` | Start production API (`:3001`) + static web server (`:3000`) |
 | `bun run lint` | Biome lint check |
 | `bun run format` | Biome auto-format |
 | `bun run typecheck` | TypeScript type check |
@@ -58,6 +58,9 @@ Environment variables (optional — defaults work out of the box):
 | Variable | Default | Description |
 |---|---|---|
 | `PORT` | `3001` | API server port |
+| `WEB_PORT` | `3000` | Static web server port for `bun run start` |
+| `WEB_ORIGIN` | `http://localhost:3000` | Allowed browser origin for API CORS in production |
+| `VITE_RIP_API_URL` | inferred | Build-time override for the frontend API origin |
 | `DOWNLOAD_DIR` | `~/Downloads/Rip` | Where downloaded files are saved |
 | `MAX_CONCURRENT_DOWNLOADS` | `3` | Max simultaneous downloads |
 | `YTDLP_PATH` | `yt-dlp` | Path to yt-dlp binary |
@@ -67,9 +70,9 @@ Copy `.env.example` to `.env` to customize.
 ## Architecture
 
 ```
-Browser (React SPA)
-    ↕ REST + WebSocket (Vite proxy in dev)
-Hono API (Bun.serve)
+Browser (React SPA on :3000)
+    ↕ REST + WebSocket
+Hono API (Bun.serve on :3001)
     ↕ subprocess (spawn)
 yt-dlp + ffmpeg
     → ~/Downloads/Rip/
