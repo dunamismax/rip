@@ -26,16 +26,30 @@ brew install yt-dlp ffmpeg
 bun run doctor
 ```
 
+`bun run doctor` exits non-zero until `yt-dlp`, `ffmpeg`, and the configured download directory are ready.
+
 ## Quick Start
 
 ```bash
 git clone https://github.com/dunamismax/rip.git
 cd rip
 bun install
+# optional: customize ports, download path, or API origin
+cp .env.example .env
+bun run doctor
 bun run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000). The API runs on port 3001. In dev, React Router proxies `/api` to the API server; in production, the SPA talks to the API directly on port 3001 by default.
+
+## Production
+
+```bash
+bun run build
+bun run start
+```
+
+`bun run start` serves the built SPA on `WEB_PORT` (default `3000`) and the API on `PORT` (default `3001`). If the browser will reach the API on a different origin, set `WEB_ORIGIN` for API CORS and `VITE_RIP_API_URL` before `bun run build`.
 
 ## Commands
 
@@ -49,8 +63,8 @@ Open [http://localhost:3000](http://localhost:3000). The API runs on port 3001. 
 | `bun run lint` | Biome lint check |
 | `bun run format` | Biome auto-format |
 | `bun run typecheck` | TypeScript type check |
-| `bun run doctor` | Verify prerequisites (yt-dlp, ffmpeg) |
-| `bun run smoke` | Smoke test API endpoints (server must be running) |
+| `bun run doctor` | Verify prerequisites and that the download directory is writable |
+| `bun run smoke` | Smoke test the API contract in-process; add `RIP_BASE_URL` to validate a running server too |
 
 ## Configuration
 
@@ -67,6 +81,22 @@ Environment variables (optional — defaults work out of the box):
 | `YTDLP_PATH` | `yt-dlp` | Path to yt-dlp binary |
 
 Copy `.env.example` to `.env` to customize.
+
+## Verification
+
+```bash
+bun run lint
+bun run typecheck
+bun run test
+bun run build
+bun run smoke
+```
+
+`bun run smoke` runs in-process by default so it works in CI and restricted environments. To also validate a running API server and WebSocket endpoint, set `RIP_BASE_URL`, for example:
+
+```bash
+RIP_BASE_URL=http://localhost:3001 bun run smoke
+```
 
 ## Architecture
 
@@ -106,7 +136,7 @@ shared/
   types.ts              # Shared type definitions
 scripts/                # CLI tools
   cli.ts                # doctor command
-  smoke.ts              # API smoke tests
+  smoke.ts              # In-process API smoke tests, optional live-server mode
 ```
 
 ### API
