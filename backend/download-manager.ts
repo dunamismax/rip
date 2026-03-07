@@ -1,5 +1,6 @@
 import { mkdir } from 'node:fs/promises';
 import type { DownloadItem, DownloadProgress, WsMessage } from '../shared/types';
+import { countIncompleteDownloads } from './download-stats';
 import { env } from './env';
 import { startDownload } from './ytdlp';
 
@@ -45,9 +46,9 @@ export class DownloadManager {
     if (changed) this.broadcastAll();
   }
 
-  /** Number of items in the pending queue (excludes active downloads). */
-  queueSize(): number {
-    return this.downloads.size;
+  /** Number of downloads that are still active or waiting to start. */
+  incompleteCount(): number {
+    return countIncompleteDownloads(this.downloads.values());
   }
 
   add(url: string, formatId: string, title: string, thumbnail: string | null, ext: string): string {

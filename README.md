@@ -7,11 +7,12 @@ Supports YouTube, Vimeo, Internet Archive, Twitter/X, Reddit, TikTok, Twitch, So
 ## Features
 
 - **Universal video extraction** — paste any supported URL, get title, thumbnail, available formats
-- **Format selection** — choose video+audio, video-only, or audio-only at any available quality
+- **Format selection** — choose grouped video+audio, video-only, or audio-only options without hidden default mismatches
 - **Real-time progress** — live download speed, ETA, and percentage via WebSocket
 - **Concurrent downloads** — queue multiple downloads with configurable concurrency (default 3)
+- **Bounded work queue** — caps active + queued downloads at 50 to keep the app responsive
 - **Dark/light theme** — toggle with localStorage persistence
-- **Cancel & cleanup** — cancel active downloads, clear finished items
+- **Cancel & cleanup** — cancel active downloads, clear finished items, auto-expire old finished entries from memory
 
 ## Prerequisites
 
@@ -92,7 +93,7 @@ yt-dlp + ffmpeg
 app/                    # React frontend
   components/           # UI components (url-input, video-card, download-queue, etc.)
   hooks/                # Custom hooks (use-downloads, use-websocket, use-theme)
-  lib/                  # Utilities, API client, shared types
+  lib/                  # Utilities, API client, shared type re-exports
   routes/home.tsx       # Main page
 backend/                # Hono API server
   index.ts              # Server entry + WebSocket
@@ -100,6 +101,8 @@ backend/                # Hono API server
   download-manager.ts   # Download queue + concurrency control
   ytdlp.ts              # yt-dlp subprocess wrapper
   env.ts                # Environment config (Zod)
+  rate-limit.ts         # Lightweight per-IP rate limiting
+shared/
   types.ts              # Shared type definitions
 scripts/                # CLI tools
   cli.ts                # doctor command

@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { getSelectableFormats } from '~/lib/format-options';
 import type { VideoMetadata } from '~/lib/types';
 import { cn, formatDuration, formatViewCount } from '~/lib/utils';
 import { FormatSelector } from './format-selector';
@@ -11,10 +12,20 @@ type VideoCardProps = {
 };
 
 export function VideoCard({ metadata, onDownload, onDismiss, downloading }: VideoCardProps) {
-  const defaultFormat = metadata.formats[0]?.formatId ?? 'best';
+  const selectableFormats = useMemo(
+    () => getSelectableFormats(metadata.formats),
+    [metadata.formats],
+  );
+  const defaultFormat = selectableFormats[0]?.formatId ?? 'best';
   const [selectedFormat, setSelectedFormat] = useState(defaultFormat);
 
-  const selectedFormatObj = metadata.formats.find((f) => f.formatId === selectedFormat);
+  useEffect(() => {
+    if (!selectableFormats.some((format) => format.formatId === selectedFormat)) {
+      setSelectedFormat(defaultFormat);
+    }
+  }, [defaultFormat, selectableFormats, selectedFormat]);
+
+  const selectedFormatObj = selectableFormats.find((f) => f.formatId === selectedFormat);
   const ext = selectedFormatObj?.ext ?? 'mp4';
 
   return (

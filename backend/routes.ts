@@ -20,7 +20,7 @@ const downloadSchema = z.object({
 const extractLimiter = new RateLimiter(10, 60_000); // 10 req/min per IP
 const downloadLimiter = new RateLimiter(20, 60_000); // 20 req/min per IP
 
-const MAX_QUEUED_DOWNLOADS = 50;
+const MAX_INCOMPLETE_DOWNLOADS = 50;
 
 function getClientIp(c: { req: { header: (name: string) => string | undefined } }): string {
   return c.req.header('x-forwarded-for')?.split(',')[0]?.trim() ?? '127.0.0.1';
@@ -79,8 +79,11 @@ export function createRoutes(manager: DownloadManager): Hono {
       return c.json({ error: 'Invalid download request.' }, 400);
     }
 
-    if (manager.queueSize() >= MAX_QUEUED_DOWNLOADS) {
-      return c.json({ error: 'Too many queued downloads. Please wait for some to finish.' }, 429);
+    if (manager.incompleteCount() >= MAX_INCOMPLETE_DOWNLOADS) {
+      return c.json(
+        { error: 'Too many active or queued downloads. Please wait for some to finish.' },
+        429,
+      );
     }
 
     const id = manager.add(

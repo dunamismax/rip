@@ -13,6 +13,7 @@
     "start:web": "\"$npm_execpath\" run scripts/start-web.ts",
     "lint": "biome check .",
     "format": "biome format --write .",
+    "test": "bun test",
     "typecheck": "react-router typegen && tsc",
     "doctor": "\"$npm_execpath\" run scripts/cli.ts doctor",
     "smoke": "\"$npm_execpath\" run scripts/smoke.ts"
