@@ -1,43 +1,44 @@
 # rip — Build Tracker
 
-**Status:** Release Prep
-**Last Updated:** 2026-03-07
+**Status:** Checkpoint Ready
+**Last Updated:** 2026-03-08
 
-## Scope
+## Objective
 
-Small self-hosted video downloader. Paste a URL, inspect yt-dlp metadata, pick a grouped format, and queue a download. No accounts, no remote services, no platform ambitions.
+Rewrite the repo from the Bun/TypeScript SPA + API stack into a Python web app built around FastAPI and server-rendered HTML while preserving the repo's main utility: self-hosted `yt-dlp` extraction, format selection, queued downloads, and download management.
 
-## Current Behavior
+## Current Migration Plan
 
-- React Router SPA on `:3000`, Hono API on `:3001`
-- Metadata extraction via `POST /api/extract`
-- Download queue with configurable concurrency and a hard cap of 50 active + queued items
-- Progress updates over `/api/ws`
-- Cancel active/queued downloads and clear finished entries
-- Finished entries remain visible until cleared, then also auto-expire from server memory after one hour
-- `bun run doctor` checks `yt-dlp`, `ffmpeg`, and that the resolved download directory is writable
-- `bun run smoke` verifies the API contract in-process by default; with `RIP_BASE_URL` it also checks a running server and WebSocket ping/pong
+1. Replace the Bun/Hono/React implementation with a FastAPI application that serves HTML and JSON from one Python process.
+2. Rebuild the download queue manager in Python with bounded concurrency, cancellation, completion cleanup, and `yt-dlp` progress parsing.
+3. Keep the repo self-hosted and local-first: no accounts, no external services, no browser build pipeline.
+4. Replace Bun commands, lockfiles, CI references, and docs with Python `uv` workflows.
+5. Remove obsolete TypeScript/Bun source, config, and helper files once the Python app is in place.
+6. Verify the migrated app with the smallest truthful Python-based checks available, then create a local commit if the checkpoint is coherent.
 
-## Repo Map
+## Target Repo Shape
 
 ```
-app/                    # SPA UI
-backend/                # API, queue manager, yt-dlp wrapper
-shared/types.ts         # Shared frontend/backend types
-scripts/cli.ts          # doctor command
-scripts/smoke.ts        # In-process API smoke checks; live mode via RIP_BASE_URL
+rip/                   # FastAPI app package
+  templates/           # Jinja templates
+  static/              # Plain CSS and small JS helpers
+tests/                 # Python tests / smoke coverage
+pyproject.toml         # Python project metadata
+README.md              # Python usage and operations
 ```
 
-## Verification
+## Verification Plan
 
-- `bun run lint`
-- `bun run typecheck`
-- `bun run test`
-- `bun run build`
-- `bun run smoke`
+- `python -m compileall rip tests`
+- `pytest`
+
+Status on 2026-03-08:
+- `python -m compileall rip tests` passed
+- `pytest` is currently blocked because the sandbox does not have project dependencies installed and network access is unavailable for `uv sync`
+- A local git commit is also blocked by sandbox write restrictions on the parent repository's worktree metadata
 
 ## Constraints
 
-- Keep changes small and local
-- Prefer correctness over feature growth
-- Preserve the repo as a self-hosted utility, not a service platform
+- Python-only implementation for this repo
+- No changes outside this worktree
+- No stale Bun/TypeScript operational guidance left behind after migration

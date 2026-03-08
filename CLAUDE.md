@@ -1,20 +1,13 @@
 # CLAUDE.md
 
-> Code agent instructions for this repository.
-
-## Identity
-
-Scry is the agent identity. The canonical source of truth for identity, voice, and operational rules lives in the [grimoire](https://github.com/dunamismax/grimoire) repo:
-
-- `SOUL.md` — identity, worldview, voice
-- `AGENTS.md` — operational rules, stack contract, verification
-
-Read those files first. Then read this repo's README and task-relevant code.
+Repo-local instructions for code agents working on `rip`.
 
 ## Repo Rules
 
-- Run `bun run lint && bun run typecheck` before committing.
-- No AI attribution in commits. Commit as `dunamismax`.
-- Push directly to main. Force-push when needed.
-- Dual remotes: GitHub + Codeberg.
-
+- Target stack: Python with FastAPI, server-rendered HTML, plain CSS, and minimal JavaScript.
+- Keep the repo self-hosted and local-first. No hosted service assumptions.
+- Prefer `uv` commands for install, run, and test flows.
+- Run `uv run pytest` before committing when tests are available.
+- Run `uv run python -m compileall rip tests` when changing Python source layout.
+- Do not add Bun, Node, TypeScript, Go, or C tooling back into this repo.
+- Do not add AI attribution to commits.
