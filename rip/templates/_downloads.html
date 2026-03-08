@@ -1,0 +1,44 @@
+{% if downloads %}
+  <div class="downloads">
+    {% for item in downloads %}
+      <article class="download-card status-{{ item.status }}">
+        <div class="download-head">
+          <div>
+            <h3>{{ item.title }}</h3>
+            <p class="muted">{{ item.status }} · {{ item.format_id }} · {{ item.ext }}</p>
+          </div>
+          {% if item.status in ["queued", "downloading", "processing"] %}
+            <form action="/downloads/{{ item.id }}/cancel" method="post">
+              <button type="submit" class="secondary">Cancel</button>
+            </form>
+          {% endif %}
+        </div>
+        <div class="progress">
+          <div class="progress-bar" style="width: {{ item.progress.percentage }}%"></div>
+        </div>
+        <p class="muted">
+          {{ item.progress.percentage }}%
+          {% if item.progress.total_bytes %}
+            · {{ item.progress.downloaded_bytes | bytes }} / {{ item.progress.total_bytes | bytes }}
+          {% else %}
+            · {{ item.progress.downloaded_bytes | bytes }}
+          {% endif %}
+          {% if item.progress.speed %}
+            · {{ item.progress.speed | speed }}
+          {% endif %}
+          {% if item.progress.eta %}
+            · ETA {{ item.progress.eta | duration }}
+          {% endif %}
+        </p>
+        {% if item.output_path %}
+          <p class="muted">Saved to {{ item.output_path }}</p>
+        {% endif %}
+        {% if item.error %}
+          <p class="error">{{ item.error }}</p>
+        {% endif %}
+      </article>
+    {% endfor %}
+  </div>
+{% else %}
+  <p class="muted">No downloads yet.</p>
+{% endif %}

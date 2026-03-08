@@ -1,0 +1,37 @@
+[project]
+name = "rip"
+version = "0.2.0"
+description = "Self-hosted yt-dlp web app built with FastAPI and server-rendered HTML."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+  "fastapi>=0.116,<1.0",
+  "jinja2>=3.1,<4.0",
+  "python-multipart>=0.0.20,<0.1",
+  "uvicorn>=0.35,<1.0",
+]
+
+[dependency-groups]
+dev = [
+  "httpx>=0.28,<0.29",
+  "pytest>=8.4,<9.0",
+]
+
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build]
+include = [
+  "rip/**/*.py",
+  "rip/templates/*.html",
+  "rip/static/*.css",
+  "rip/static/*.js",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["rip"]
+
+[tool.pytest.ini_options]
+addopts = "-q"
+testpaths = ["tests"]
