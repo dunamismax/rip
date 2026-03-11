@@ -22,6 +22,7 @@
 
   {% if metadata %}
     <section class="panel">
+      {% set initial_format = metadata.formats[0] if metadata.formats else None %}
       <div class="media-summary">
         {% if metadata.thumbnail %}
           <img src="{{ metadata.thumbnail }}" alt="" class="thumbnail">
@@ -43,6 +44,9 @@
         <input type="hidden" name="url" value="{{ extract_url }}">
         <input type="hidden" name="title" value="{{ metadata.title }}">
         <input type="hidden" name="thumbnail" value="{{ metadata.thumbnail or '' }}">
+        <input type="hidden" name="source_ext" value="{{ initial_format.ext if initial_format else '' }}">
+        <input type="hidden" name="has_video" value="{{ 'true' if initial_format and initial_format.has_video else 'false' }}">
+        <input type="hidden" name="has_audio" value="{{ 'true' if initial_format and initial_format.has_audio else 'false' }}">
 
         <fieldset>
           <legend>Available formats</legend>
@@ -50,7 +54,17 @@
             <div class="formats">
               {% for item in metadata.formats %}
                 <label class="format-row">
-                  <input type="radio" name="format_id" value="{{ item.format_id }}" data-ext="{{ item.ext }}" required {% if loop.first %}checked{% endif %}>
+                  <input
+                    type="radio"
+                    name="format_id"
+                    value="{{ item.format_id }}"
+                    data-ext="{{ item.ext }}"
+                    data-has-video="{{ 'true' if item.has_video else 'false' }}"
+                    data-has-audio="{{ 'true' if item.has_audio else 'false' }}"
+                    data-output-extensions="{{ item.output_extensions | join(',') }}"
+                    required
+                    {% if loop.first %}checked{% endif %}
+                  >
                   <span class="format-main">{{ item.format_id }} · {{ item.ext }} · {{ item.resolution or "audio" }}</span>
                   <span class="format-meta">
                     {% if item.filesize or item.filesize_approx %}
@@ -79,10 +93,19 @@
         </fieldset>
 
         <div class="format-actions">
-          <label for="ext">Preferred extension</label>
-          <input id="ext" name="ext" type="text" value="{{ metadata.formats[0].ext if metadata.formats else 'mp4' }}">
+          <label for="ext">Output format</label>
+          <select id="ext" name="ext" {% if not metadata.formats %}disabled{% endif %}>
+            {% if initial_format %}
+              {% for value in initial_format.output_extensions %}
+                <option value="{{ value }}" {% if value == initial_format.ext %}selected{% endif %}>{{ value }}</option>
+              {% endfor %}
+            {% else %}
+              <option value="mp4">mp4</option>
+            {% endif %}
+          </select>
           <button type="submit" {% if not metadata.formats %}disabled{% endif %}>Queue download</button>
         </div>
+        <p class="muted">Audio choices extract audio. Video choices remux the download when possible.</p>
       </form>
     </section>
   {% endif %}

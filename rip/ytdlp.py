@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from .config import Settings
+from .download_options import normalize_extension, output_extensions, output_kind, validate_output_extension
 from .models import VideoFormat, VideoMetadata
 
 PROGRESS_PREFIX = "rip-progress:"
@@ -20,8 +21,9 @@ class YtdlpError(RuntimeError):
 async def extract_metadata(url: str, settings: Settings) -> VideoMetadata:
     process = await asyncio.create_subprocess_exec(
         settings.ytdlp_path,
-        "--dump-json",
+        "--dump-single-json",
         "--no-download",
+        "--no-playlist",
         "--no-warnings",
         url,
         stdout=asyncio.subprocess.PIPE,
@@ -40,14 +42,26 @@ async def extract_metadata(url: str, settings: Settings) -> VideoMetadata:
     return map_metadata(raw)
 
 
-def build_download_args(settings: Settings, url: str, format_id: str, output_dir: Path) -> list[str]:
+def build_download_args(
+    settings: Settings,
+    url: str,
+    format_id: str,
+    output_dir: Path,
+    preferred_ext: str,
+    *,
+    source_ext: str | None = None,
+    has_video: bool | None = None,
+    has_audio: bool | None = None,
+) -> list[str]:
     output_template = str(output_dir / "%(title).200s [%(id)s].%(ext)s")
-    return [
+    args = [
         settings.ytdlp_path,
         "-f",
         format_id,
         "-o",
         output_template,
+        "--ffmpeg-location",
+        settings.ffmpeg_path,
         "--newline",
         "--progress-template",
         (
@@ -61,8 +75,17 @@ def build_download_args(settings: Settings, url: str, format_id: str, output_dir
         "--no-warnings",
         "--no-playlist",
         "--restrict-filenames",
-        url,
     ]
+    args.extend(
+        _build_output_args(
+            preferred_ext,
+            source_ext=source_ext,
+            has_video=has_video,
+            has_audio=has_audio,
+        )
+    )
+    args.append(url)
+    return args
 
 
 def parse_progress_line(line: str) -> dict[str, Any] | None:
@@ -120,10 +143,11 @@ def map_format(raw: dict[str, Any]) -> VideoFormat:
     acodec = _as_string(raw.get("acodec"))
     has_video = bool(vcodec and vcodec != "none")
     has_audio = bool(acodec and acodec != "none")
+    ext = str(raw.get("ext") or "mp4")
 
     return VideoFormat(
         format_id=str(raw.get("format_id") or ""),
-        ext=str(raw.get("ext") or "mp4"),
+        ext=ext,
         resolution=_as_string(raw.get("resolution")),
         filesize=_as_int(raw.get("filesize")),
         filesize_approx=_as_int(raw.get("filesize_approx")),
@@ -134,6 +158,7 @@ def map_format(raw: dict[str, Any]) -> VideoFormat:
         format_note=_as_string(raw.get("format_note")),
         has_video=has_video,
         has_audio=has_audio,
+        output_extensions=output_extensions(source_ext=ext, has_video=has_video, has_audio=has_audio),
     )
 
 
@@ -143,6 +168,29 @@ async def check_ytdlp(settings: Settings) -> str | None:
 
 async def check_ffmpeg(settings: Settings) -> str | None:
     return await _check_binary([settings.ffmpeg_path, "-version"])
+
+
+def _build_output_args(
+    preferred_ext: str,
+    *,
+    source_ext: str | None,
+    has_video: bool | None,
+    has_audio: bool | None,
+) -> list[str]:
+    normalized_ext = validate_output_extension(preferred_ext, source_ext=source_ext)
+    normalized_source = normalize_extension(source_ext)
+    if normalized_source and normalized_ext == normalized_source:
+        return []
+
+    kind = output_kind(normalized_ext)
+    if kind == "audio":
+        if has_audio is False:
+            raise ValueError("The selected format does not contain audio.")
+        return ["--extract-audio", "--audio-format", normalized_ext]
+
+    if has_video is False:
+        raise ValueError("The selected format does not contain video.")
+    return ["--remux-video", normalized_ext]
 
 
 async def _check_binary(argv: list[str]) -> str | None:

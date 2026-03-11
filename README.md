@@ -6,6 +6,7 @@
 
 - Metadata extraction through `yt-dlp`
 - Format selection before download
+- Output format selection with audio extraction or video remuxing
 - Concurrent download queue with cancellation
 - Download progress over JSON polling and `/api/ws`
 - Server-rendered HTML with plain CSS and minimal JavaScript
@@ -59,7 +60,10 @@ Environment variables are optional.
 | `MAX_CONCURRENT_DOWNLOADS` | `3` | Maximum simultaneous `yt-dlp` processes |
 | `MAX_INCOMPLETE_DOWNLOADS` | `50` | Combined active + queued download cap |
 | `YTDLP_PATH` | `yt-dlp` | Path to the `yt-dlp` executable |
-| `FFMPEG_PATH` | `ffmpeg` | Path to the `ffmpeg` executable |
+| `FFMPEG_PATH` | `ffmpeg` | Path to the `ffmpeg` executable passed to `yt-dlp --ffmpeg-location` |
+| `TRUSTED_PROXY_HOSTS` | empty | Comma-separated proxy IPs allowed to supply `X-Forwarded-For` |
+
+When you pick an output format in the UI or API, audio targets use `yt-dlp --extract-audio` and video targets use `yt-dlp --remux-video`. Selecting the source format's native extension skips post-processing.
 
 ## API
 

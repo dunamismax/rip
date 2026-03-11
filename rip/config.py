@@ -19,6 +19,13 @@ def _read_int(name: str, default: int, *, minimum: int | None = None, maximum: i
     return value
 
 
+def _read_csv(name: str) -> tuple[str, ...]:
+    raw = os.getenv(name, "").strip()
+    if not raw:
+        return ()
+    return tuple(part.strip() for part in raw.split(",") if part.strip())
+
+
 @dataclass(slots=True)
 class Settings:
     host: str
@@ -28,6 +35,7 @@ class Settings:
     max_incomplete_downloads: int
     ytdlp_path: str
     ffmpeg_path: str
+    trusted_proxy_hosts: tuple[str, ...] = ()
     request_body_limit_bytes: int = 1024 * 1024
     completed_expiry_seconds: int = 60 * 60
 
@@ -42,4 +50,5 @@ def load_settings() -> Settings:
         max_incomplete_downloads=_read_int("MAX_INCOMPLETE_DOWNLOADS", 50, minimum=1, maximum=500),
         ytdlp_path=os.getenv("YTDLP_PATH", "yt-dlp").strip() or "yt-dlp",
         ffmpeg_path=os.getenv("FFMPEG_PATH", "ffmpeg").strip() or "ffmpeg",
+        trusted_proxy_hosts=_read_csv("TRUSTED_PROXY_HOSTS"),
     )
