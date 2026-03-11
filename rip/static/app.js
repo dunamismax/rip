@@ -37,16 +37,46 @@ if (downloadsPanel) {
 }
 
 if (formatForm) {
-  const extInput = formatForm.querySelector("#ext");
+  const extSelect = formatForm.querySelector("#ext");
+  const sourceExtInput = formatForm.querySelector('input[name="source_ext"]');
+  const hasVideoInput = formatForm.querySelector('input[name="has_video"]');
+  const hasAudioInput = formatForm.querySelector('input[name="has_audio"]');
   const radios = formatForm.querySelectorAll('input[name="format_id"]');
 
-  const syncExt = () => {
+  const syncFormatFields = () => {
     const checked = formatForm.querySelector('input[name="format_id"]:checked');
-    if (checked && extInput && checked.dataset.ext) {
-      extInput.value = checked.dataset.ext;
+    if (!checked || !extSelect) {
+      return;
+    }
+
+    const options = (checked.dataset.outputExtensions || checked.dataset.ext || "")
+      .split(",")
+      .map((value) => value.trim())
+      .filter(Boolean);
+    const nextValue = options.includes(extSelect.value) ? extSelect.value : (checked.dataset.ext || options[0] || "");
+
+    extSelect.replaceChildren();
+    options.forEach((value) => {
+      const option = document.createElement("option");
+      option.value = value;
+      option.textContent = value;
+      if (value === nextValue) {
+        option.selected = true;
+      }
+      extSelect.appendChild(option);
+    });
+
+    if (sourceExtInput) {
+      sourceExtInput.value = checked.dataset.ext || "";
+    }
+    if (hasVideoInput) {
+      hasVideoInput.value = checked.dataset.hasVideo || "false";
+    }
+    if (hasAudioInput) {
+      hasAudioInput.value = checked.dataset.hasAudio || "false";
     }
   };
 
-  radios.forEach((radio) => radio.addEventListener("change", syncExt));
-  syncExt();
+  radios.forEach((radio) => radio.addEventListener("change", syncFormatFields));
+  syncFormatFields();
 }

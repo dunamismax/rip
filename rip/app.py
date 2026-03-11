@@ -12,6 +12,8 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from starlette.datastructures import Headers
+from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from .config import Settings, load_settings
 from .download_manager import DownloadManager, EventBus
@@ -28,12 +30,56 @@ templates.env.filters["speed"] = lambda value: _format_speed(value)
 templates.env.filters["duration"] = lambda value: _format_duration(value)
 
 
+class RequestBodyTooLargeError(RuntimeError):
+    pass
+
+
+class RequestBodyLimitMiddleware:
+    def __init__(self, app: ASGIApp, *, max_body_bytes: int) -> None:
+        self.app = app
+        self.max_body_bytes = max_body_bytes
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        headers = Headers(scope=scope)
+        content_length = headers.get("content-length")
+        if content_length:
+            try:
+                if int(content_length) > self.max_body_bytes:
+                    await JSONResponse({"error": "Request body too large."}, status_code=413)(scope, receive, send)
+                    return
+            except ValueError:
+                pass
+
+        received = 0
+
+        async def limited_receive() -> Message:
+            nonlocal received
+            message = await receive()
+            if message["type"] != "http.request":
+                return message
+
+            received += len(message.get("body", b""))
+            if received > self.max_body_bytes:
+                raise RequestBodyTooLargeError
+            return message
+
+        try:
+            await self.app(scope, limited_receive, send)
+        except RequestBodyTooLargeError:
+            await JSONResponse({"error": "Request body too large."}, status_code=413)(scope, receive, send)
+
+
 def create_app(settings: Settings | None = None, extractor: Extractor = extract_metadata) -> FastAPI:
     settings = settings or load_settings()
     bus = EventBus()
     manager = DownloadManager(settings, bus)
     extract_limiter = RateLimiter(10, 60)
     download_limiter = RateLimiter(20, 60)
+    trusted_proxy_hosts = set(settings.trusted_proxy_hosts)
 
     @asynccontextmanager
     async def lifespan(_app: FastAPI):
@@ -44,21 +90,11 @@ def create_app(settings: Settings | None = None, extractor: Extractor = extract_
             await manager.shutdown()
 
     app = FastAPI(lifespan=lifespan)
+    app.add_middleware(RequestBodyLimitMiddleware, max_body_bytes=settings.request_body_limit_bytes)
     app.mount("/static", StaticFiles(directory=str(PACKAGE_ROOT / "static")), name="static")
     app.state.settings = settings
     app.state.manager = manager
     app.state.bus = bus
-
-    @app.middleware("http")
-    async def body_size_limit(request: Request, call_next):
-        content_length = request.headers.get("content-length")
-        if content_length:
-            try:
-                if int(content_length) > settings.request_body_limit_bytes:
-                    return JSONResponse({"error": "Request body too large."}, status_code=413)
-            except ValueError:
-                pass
-        return await call_next(request)
 
     @app.exception_handler(RequestValidationError)
     async def validation_error_handler(_request: Request, _exc: RequestValidationError):
@@ -100,7 +136,7 @@ def create_app(settings: Settings | None = None, extractor: Extractor = extract_
                 status_code=400,
             )
 
-        client_ip = _client_ip(request)
+        client_ip = _client_ip(request, trusted_proxy_hosts)
         if not extract_limiter.allow(client_ip):
             return templates.TemplateResponse(
                 "index.html",
@@ -154,6 +190,9 @@ def create_app(settings: Settings | None = None, extractor: Extractor = extract_
         title: str = Form(...),
         thumbnail: str = Form(""),
         ext: str = Form("mp4"),
+        source_ext: str = Form(""),
+        has_video: bool | None = Form(None),
+        has_audio: bool | None = Form(None),
     ):
         try:
             payload = DownloadRequest(
@@ -162,34 +201,41 @@ def create_app(settings: Settings | None = None, extractor: Extractor = extract_
                 title=title,
                 thumbnail=thumbnail or None,
                 ext=ext,
+                source_ext=source_ext or None,
+                has_video=has_video,
+                has_audio=has_audio,
             )
         except Exception:
             raise HTTPException(status_code=400, detail="Invalid download request.")
 
-        client_ip = _client_ip(request)
+        client_ip = _client_ip(request, trusted_proxy_hosts)
         if not download_limiter.allow(client_ip):
             raise HTTPException(status_code=429, detail="Too many download requests. Please wait.")
 
-        if await manager.incomplete_count() >= settings.max_incomplete_downloads:
-            raise HTTPException(
-                status_code=429,
-                detail="Too many active or queued downloads. Please wait for some to finish.",
-            )
-
-        await manager.add(
+        download_id = await manager.add(
             str(payload.url),
             payload.format_id,
             payload.title,
             payload.thumbnail,
             payload.ext,
+            source_ext=payload.source_ext,
+            has_video=payload.has_video,
+            has_audio=payload.has_audio,
         )
+        if download_id is None:
+            raise HTTPException(
+                status_code=429,
+                detail="Too many active or queued downloads. Please wait for some to finish.",
+            )
         return RedirectResponse(url="/?notice=Download+queued", status_code=303)
 
     @app.post("/downloads/{download_id}/cancel")
     async def cancel_form(download_id: str):
-        success = await manager.cancel(download_id)
-        if not success:
+        result = await manager.cancel(download_id)
+        if result == "not_found":
             raise HTTPException(status_code=404, detail="Download not found.")
+        if result == "not_cancellable":
+            return RedirectResponse(url="/?notice=Download+already+finished", status_code=303)
         return RedirectResponse(url="/?notice=Download+cancelled", status_code=303)
 
     @app.post("/downloads/clear-completed")
@@ -211,7 +257,7 @@ def create_app(settings: Settings | None = None, extractor: Extractor = extract_
 
     @app.post("/api/extract")
     async def extract_api(request: Request):
-        client_ip = _client_ip(request)
+        client_ip = _client_ip(request, trusted_proxy_hosts)
         if not extract_limiter.allow(client_ip):
             return JSONResponse({"error": "Too many requests. Please wait before trying again."}, status_code=429)
 
@@ -232,7 +278,7 @@ def create_app(settings: Settings | None = None, extractor: Extractor = extract_
 
     @app.post("/api/download")
     async def download_api(request: Request):
-        client_ip = _client_ip(request)
+        client_ip = _client_ip(request, trusted_proxy_hosts)
         if not download_limiter.allow(client_ip):
             return JSONResponse({"error": "Too many requests. Please wait before trying again."}, status_code=429)
 
@@ -245,26 +291,30 @@ def create_app(settings: Settings | None = None, extractor: Extractor = extract_
         except Exception:
             return JSONResponse({"error": "Invalid download request."}, status_code=400)
 
-        if await manager.incomplete_count() >= settings.max_incomplete_downloads:
-            return JSONResponse(
-                {"error": "Too many active or queued downloads. Please wait for some to finish."},
-                status_code=429,
-            )
-
         download_id = await manager.add(
             str(validated.url),
             validated.format_id,
             validated.title,
             validated.thumbnail,
             validated.ext,
+            source_ext=validated.source_ext,
+            has_video=validated.has_video,
+            has_audio=validated.has_audio,
         )
+        if download_id is None:
+            return JSONResponse(
+                {"error": "Too many active or queued downloads. Please wait for some to finish."},
+                status_code=429,
+            )
         return JSONResponse({"id": download_id}, status_code=201)
 
     @app.delete("/api/download/{download_id}")
     async def cancel_api(download_id: str):
-        success = await manager.cancel(download_id)
-        if not success:
+        result = await manager.cancel(download_id)
+        if result == "not_found":
             return JSONResponse({"error": "Download not found."}, status_code=404)
+        if result == "not_cancellable":
+            return JSONResponse({"error": "Download can only be cancelled while queued or active."}, status_code=409)
         return JSONResponse({"status": "cancelled"})
 
     @app.get("/api/downloads")
@@ -316,18 +366,21 @@ def create_app(settings: Settings | None = None, extractor: Extractor = extract_
 async def _safe_json(request: Request) -> dict | None:
     try:
         payload = await request.json()
+    except RequestBodyTooLargeError:
+        raise
     except Exception:
         return None
     return payload if isinstance(payload, dict) else None
 
 
-def _client_ip(request: Request) -> str:
+def _client_ip(request: Request, trusted_proxy_hosts: set[str] | None = None) -> str:
+    peer_host = request.client.host if request.client else "127.0.0.1"
     forwarded_for = request.headers.get("x-forwarded-for")
-    if forwarded_for:
-        return forwarded_for.split(",")[0].strip()
-    if request.client:
-        return request.client.host
-    return "127.0.0.1"
+    if forwarded_for and trusted_proxy_hosts and peer_host in trusted_proxy_hosts:
+        forwarded_host = forwarded_for.split(",")[0].strip()
+        if forwarded_host:
+            return forwarded_host
+    return peer_host
 
 
 def _has_active_downloads(downloads: list) -> bool:

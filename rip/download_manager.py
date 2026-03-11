@@ -6,7 +6,7 @@ import time
 import uuid
 from collections import deque
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Literal
 
 from .config import Settings
 from .models import DownloadItem, DownloadProgress
@@ -83,7 +83,19 @@ class DownloadManager:
         async with self._lock:
             return sum(1 for item in self._downloads.values() if item.status in {"queued", "downloading", "processing"})
 
-    async def add(self, url: str, format_id: str, title: str, thumbnail: str | None, ext: str) -> str:
+    async def add(
+        self,
+        url: str,
+        format_id: str,
+        title: str,
+        thumbnail: str | None,
+        ext: str,
+        *,
+        source_ext: str | None = None,
+        has_video: bool | None = None,
+        has_audio: bool | None = None,
+    ) -> str | None:
+        created_at = int(time.time())
         item = DownloadItem(
             id=str(uuid.uuid4()),
             url=url,
@@ -91,14 +103,22 @@ class DownloadManager:
             thumbnail=thumbnail,
             format_id=format_id,
             ext=ext,
+            source_ext=source_ext,
+            has_video=has_video,
+            has_audio=has_audio,
             output_path=None,
             status="queued",
             progress=DownloadProgress(),
-            created_at=int(time.time()),
+            created_at=created_at,
             completed_at=None,
             error=None,
         )
         async with self._lock:
+            incomplete = sum(
+                1 for download in self._downloads.values() if download.status in {"queued", "downloading", "processing"}
+            )
+            if incomplete >= self.settings.max_incomplete_downloads:
+                return None
             self._downloads[item.id] = item
             self._queue.append(item.id)
 
@@ -108,11 +128,13 @@ class DownloadManager:
         await self.broadcast_downloads()
         return item.id
 
-    async def cancel(self, download_id: str) -> bool:
+    async def cancel(self, download_id: str) -> Literal["cancelled", "not_found", "not_cancellable"]:
         async with self._lock:
             item = self._downloads.get(download_id)
             if item is None:
-                return False
+                return "not_found"
+            if item.status in {"completed", "failed", "cancelled"}:
+                return "not_cancellable"
             item.status = "cancelled"
             item.completed_at = int(time.time())
 
@@ -122,7 +144,7 @@ class DownloadManager:
                     process.terminate()
 
         await self.broadcast_downloads()
-        return True
+        return "cancelled"
 
     async def clear_completed(self) -> None:
         async with self._lock:
@@ -161,7 +183,26 @@ class DownloadManager:
                 return
             if item.status == "cancelled":
                 return
-            args = build_download_args(self.settings, item.url, item.format_id, self.settings.download_dir)
+            try:
+                args = build_download_args(
+                    self.settings,
+                    item.url,
+                    item.format_id,
+                    self.settings.download_dir,
+                    item.ext,
+                    source_ext=item.source_ext,
+                    has_video=item.has_video,
+                    has_audio=item.has_audio,
+                )
+            except ValueError as exc:
+                item.status = "failed"
+                item.error = str(exc)
+                item.completed_at = int(time.time())
+                args = []
+
+        if not args:
+            await self.broadcast_downloads()
+            return
 
         try:
             process = await asyncio.create_subprocess_exec(
