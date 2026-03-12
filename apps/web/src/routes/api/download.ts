@@ -1,10 +1,10 @@
 import {
+  ErrorResponseSchema,
   QueueDownloadRequestSchema,
   QueueDownloadResponseSchema,
 } from '@rip/contracts'
 import { createFileRoute } from '@tanstack/react-router'
 import { json } from '@tanstack/react-start'
-import { Effect, Schema } from 'effect'
 import { requireSession } from '#/lib/auth'
 import { getDownloadManager } from '#/server/download-manager'
 import { AppError } from '#/server/errors'
@@ -22,45 +22,34 @@ export const Route = createFileRoute('/api/download')({
 
           if (!downloadLimiter.allow(getClientIp(request))) {
             return json(
-              {
+              ErrorResponseSchema.parse({
                 error: 'Too many requests. Please wait before trying again.',
-              },
+              }),
               {
                 status: 429,
               }
             )
           }
 
-          const id = await Effect.runPromise(
-            Effect.gen(function* () {
-              const payload = yield* Effect.tryPromise(() =>
-                readValidatedJson(
-                  request,
-                  QueueDownloadRequestSchema,
-                  'Invalid download request.'
-                )
-              )
-
-              const id = yield* Effect.tryPromise(() =>
-                getDownloadManager().queueDownload(session.user.id, payload)
-              )
-
-              if (!id) {
-                throw new AppError(
-                  429,
-                  'Too many active or queued downloads. Please wait for some to finish.'
-                )
-              }
-
-              return id
-            })
+          const payload = await readValidatedJson(
+            request,
+            QueueDownloadRequestSchema,
+            'Invalid download request.'
           )
 
-          const response = await Schema.encode(QueueDownloadResponseSchema)({
-            id,
-          })
+          const id = await getDownloadManager().queueDownload(
+            session.user.id,
+            payload
+          )
 
-          return json(response, {
+          if (!id) {
+            throw new AppError(
+              429,
+              'Too many active or queued downloads. Please wait for some to finish.'
+            )
+          }
+
+          return json(QueueDownloadResponseSchema.parse({ id }), {
             status: 201,
           })
         } catch (error) {

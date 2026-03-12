@@ -1,5 +1,5 @@
 import { json } from '@tanstack/react-start'
-import { Schema } from 'effect'
+import type { ZodType } from 'zod'
 import { loadEnv } from './env'
 import { AppError, toAppError } from './errors'
 
@@ -40,16 +40,18 @@ export async function readJsonBody(request: Request) {
 
 export async function readValidatedJson<T>(
   request: Request,
-  schema: Schema.Schema<T>,
+  schema: ZodType<T>,
   invalidMessage: string
 ) {
   const payload = await readJsonBody(request)
 
-  try {
-    return await Schema.decodeUnknownPromise(schema)(payload)
-  } catch (error) {
-    throw new AppError(400, invalidMessage, error)
+  const result = await schema.safeParseAsync(payload)
+
+  if (!result.success) {
+    throw new AppError(400, invalidMessage, result.error)
   }
+
+  return result.data
 }
 
 export function errorResponse(error: unknown) {

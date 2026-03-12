@@ -21,7 +21,6 @@ import {
   useEffect,
   useState,
 } from 'react'
-import { FormatAdvisor } from '#/components/format-advisor'
 import {
   api,
   formatBytes,
@@ -129,7 +128,7 @@ function AuthScreen({
             </div>
             <div className="stat-pill">
               <span>Contracts</span>
-              <strong>Effect Schema</strong>
+              <strong>Zod</strong>
             </div>
             <div className="stat-pill">
               <span>State</span>
@@ -311,8 +310,8 @@ function Dashboard({
           <p className="eyebrow">Self-hosted downloader</p>
           <h1>rip</h1>
           <p className="hero-text">
-            Bun runtime, TanStack Start UI, Better Auth, Drizzle, Effect Schema,
-            and a PostgreSQL-backed queue for yt-dlp downloads.
+            Bun runtime, TanStack Start UI, Better Auth, Drizzle, Zod, and a
+            PostgreSQL-backed queue for yt-dlp downloads.
           </p>
         </div>
 
@@ -392,144 +391,140 @@ function Dashboard({
           </section>
 
           {metadata ? (
-            <>
-              <section className="panel">
-                <div className="media-summary">
-                  {metadata.thumbnail ? (
-                    <img
-                      className="media-thumb"
-                      src={metadata.thumbnail}
-                      alt=""
-                      loading="lazy"
-                    />
-                  ) : null}
-                  <div className="media-copy">
-                    <p className="eyebrow">Ready to queue</p>
-                    <h2>{metadata.title}</h2>
-                    <p className="panel-note">
-                      {[
-                        metadata.uploader,
-                        metadata.extractor,
-                        formatDuration(metadata.duration),
-                      ]
-                        .filter(Boolean)
-                        .join(' | ')}
-                    </p>
-                    <a
-                      className="text-link"
-                      href={metadata.webpageUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      Open source page
-                    </a>
-                  </div>
-                </div>
-
-                <div className="format-grid">
-                  {metadata.formats.length ? (
-                    metadata.formats.map((format) => (
-                      <label
-                        key={format.formatId}
-                        className={`format-card ${
-                          format.formatId === selectedFormatId
-                            ? 'format-card-active'
-                            : ''
-                        }`}
-                      >
-                        <input
-                          type="radio"
-                          name="format"
-                          checked={format.formatId === selectedFormatId}
-                          onChange={() => setSelectedFormatId(format.formatId)}
-                        />
-                        <div>
-                          <strong>
-                            {format.formatId} | {format.ext} |{' '}
-                            {format.resolution ?? 'audio'}
-                          </strong>
-                          <p>
-                            {format.filesize || format.filesizeApprox
-                              ? formatBytes(
-                                  format.filesize ?? format.filesizeApprox
-                                )
-                              : 'size unknown'}
-                            {' | '}
-                            {format.hasVideo && format.hasAudio
-                              ? 'video + audio'
-                              : format.hasVideo
-                                ? 'video only'
-                                : 'audio only'}
-                            {format.formatNote ? ` | ${format.formatNote}` : ''}
-                          </p>
-                        </div>
-                      </label>
-                    ))
-                  ) : (
-                    <p className="panel-note">
-                      yt-dlp returned no selectable formats for this URL.
-                    </p>
-                  )}
-                </div>
-
-                <form
-                  className="queue-bar"
-                  onSubmit={(event) => {
-                    event.preventDefault()
-
-                    if (!metadata || !selectedFormat) {
-                      return
-                    }
-
-                    void queueMutation.mutate({
-                      url,
-                      formatId: selectedFormat.formatId,
-                      title: metadata.title,
-                      thumbnail: metadata.thumbnail,
-                      ext: outputExt || selectedFormat.ext,
-                      sourceExt: selectedFormat.ext,
-                      hasVideo: selectedFormat.hasVideo,
-                      hasAudio: selectedFormat.hasAudio,
-                    })
-                  }}
-                >
-                  <label className="field compact-field">
-                    <span>Output format</span>
-                    <select
-                      value={outputExt}
-                      onChange={(event) =>
-                        setOutputExt(event.target.value as OutputExtension)
-                      }
-                      disabled={!selectedFormat}
-                    >
-                      {selectedFormat?.outputExtensions.map((option) => (
-                        <option key={option} value={option}>
-                          {option}
-                        </option>
-                      )) ?? <option value="">Choose a format</option>}
-                    </select>
-                  </label>
-                  <button
-                    className="primary-button"
-                    type="submit"
-                    disabled={!selectedFormat || queueMutation.isPending}
-                  >
-                    <Download size={16} />
-                    {queueMutation.isPending ? 'Queueing...' : 'Queue download'}
-                  </button>
-                </form>
-
-                {queueMutation.error ? (
-                  <p className="error-text">
-                    {queueMutation.error instanceof Error
-                      ? queueMutation.error.message
-                      : 'Unable to queue the download.'}
-                  </p>
+            <section className="panel">
+              <div className="media-summary">
+                {metadata.thumbnail ? (
+                  <img
+                    className="media-thumb"
+                    src={metadata.thumbnail}
+                    alt=""
+                    loading="lazy"
+                  />
                 ) : null}
-              </section>
+                <div className="media-copy">
+                  <p className="eyebrow">Ready to queue</p>
+                  <h2>{metadata.title}</h2>
+                  <p className="panel-note">
+                    {[
+                      metadata.uploader,
+                      metadata.extractor,
+                      formatDuration(metadata.duration),
+                    ]
+                      .filter(Boolean)
+                      .join(' | ')}
+                  </p>
+                  <a
+                    className="text-link"
+                    href={metadata.webpageUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Open source page
+                  </a>
+                </div>
+              </div>
 
-              <FormatAdvisor key={metadata.id} metadata={metadata} />
-            </>
+              <div className="format-grid">
+                {metadata.formats.length ? (
+                  metadata.formats.map((format) => (
+                    <label
+                      key={format.formatId}
+                      className={`format-card ${
+                        format.formatId === selectedFormatId
+                          ? 'format-card-active'
+                          : ''
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="format"
+                        checked={format.formatId === selectedFormatId}
+                        onChange={() => setSelectedFormatId(format.formatId)}
+                      />
+                      <div>
+                        <strong>
+                          {format.formatId} | {format.ext} |{' '}
+                          {format.resolution ?? 'audio'}
+                        </strong>
+                        <p>
+                          {format.filesize || format.filesizeApprox
+                            ? formatBytes(
+                                format.filesize ?? format.filesizeApprox
+                              )
+                            : 'size unknown'}
+                          {' | '}
+                          {format.hasVideo && format.hasAudio
+                            ? 'video + audio'
+                            : format.hasVideo
+                              ? 'video only'
+                              : 'audio only'}
+                          {format.formatNote ? ` | ${format.formatNote}` : ''}
+                        </p>
+                      </div>
+                    </label>
+                  ))
+                ) : (
+                  <p className="panel-note">
+                    yt-dlp returned no selectable formats for this URL.
+                  </p>
+                )}
+              </div>
+
+              <form
+                className="queue-bar"
+                onSubmit={(event) => {
+                  event.preventDefault()
+
+                  if (!metadata || !selectedFormat) {
+                    return
+                  }
+
+                  void queueMutation.mutate({
+                    url,
+                    formatId: selectedFormat.formatId,
+                    title: metadata.title,
+                    thumbnail: metadata.thumbnail,
+                    ext: outputExt || selectedFormat.ext,
+                    sourceExt: selectedFormat.ext,
+                    hasVideo: selectedFormat.hasVideo,
+                    hasAudio: selectedFormat.hasAudio,
+                  })
+                }}
+              >
+                <label className="field compact-field">
+                  <span>Output format</span>
+                  <select
+                    value={outputExt}
+                    onChange={(event) =>
+                      setOutputExt(event.target.value as OutputExtension)
+                    }
+                    disabled={!selectedFormat}
+                  >
+                    {selectedFormat?.outputExtensions.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    )) ?? <option value="">Choose a format</option>}
+                  </select>
+                </label>
+                <button
+                  className="primary-button"
+                  type="submit"
+                  disabled={!selectedFormat || queueMutation.isPending}
+                >
+                  <Download size={16} />
+                  {queueMutation.isPending ? 'Queueing...' : 'Queue download'}
+                </button>
+              </form>
+
+              {queueMutation.error ? (
+                <p className="error-text">
+                  {queueMutation.error instanceof Error
+                    ? queueMutation.error.message
+                    : 'Unable to queue the download.'}
+                </p>
+              ) : null}
+            </section>
           ) : null}
         </div>
 

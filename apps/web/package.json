@@ -23,10 +23,6 @@
     "@opentelemetry/semantic-conventions": "^1.40.0",
     "@rip/contracts": "workspace:*",
     "@rip/db": "workspace:*",
-    "@tanstack/ai": "latest",
-    "@tanstack/ai-client": "latest",
-    "@tanstack/ai-openai": "latest",
-    "@tanstack/ai-react": "latest",
     "@tanstack/react-devtools": "latest",
     "@tanstack/react-query": "latest",
     "@tanstack/react-query-devtools": "latest",
@@ -37,12 +33,11 @@
     "@tanstack/router-plugin": "^1.132.0",
     "better-auth": "^1.5.3",
     "drizzle-orm": "^0.45.1",
-    "effect": "^3.19.19",
     "lucide-react": "^0.577.0",
-    "nitro": "npm:nitro-nightly@latest",
+    "nitro": "latest",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
-    "streamdown": "^2.3.0"
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.5",
@@ -60,7 +55,6 @@
     "typescript": "^5.7.2",
     "vite": "^7.3.1",
     "vite-tsconfig-paths": "^5.1.4",
-    "vitest": "^3.0.5",
-    "zod": "^4.3.6"
+    "vitest": "^3.0.5"
   }
 }

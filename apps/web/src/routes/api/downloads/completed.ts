@@ -1,7 +1,6 @@
 import { OkResponseSchema } from '@rip/contracts'
 import { createFileRoute } from '@tanstack/react-router'
 import { json } from '@tanstack/react-start'
-import { Schema } from 'effect'
 import { requireSession } from '#/lib/auth'
 import { getDownloadManager } from '#/server/download-manager'
 import { errorResponse } from '#/server/http'
@@ -15,7 +14,7 @@ export const Route = createFileRoute('/api/downloads/completed')({
           await getDownloadManager().clearCompleted(session.user.id)
 
           return json(
-            await Schema.encode(OkResponseSchema)({
+            OkResponseSchema.parse({
               status: 'ok',
             })
           )
