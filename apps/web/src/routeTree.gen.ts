@@ -16,7 +16,6 @@ import { Route as ApiDownloadRouteImport } from './routes/api/download'
 import { Route as ApiDownloadsCompletedRouteImport } from './routes/api/downloads/completed'
 import { Route as ApiDownloadDownloadIdRouteImport } from './routes/api/download/$downloadId'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
-import { Route as ApiAiFormatAdvisorRouteImport } from './routes/api/ai/format-advisor'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -53,18 +52,12 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiAiFormatAdvisorRoute = ApiAiFormatAdvisorRouteImport.update({
-  id: '/api/ai/format-advisor',
-  path: '/api/ai/format-advisor',
-  getParentRoute: () => rootRouteImport,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/api/download': typeof ApiDownloadRouteWithChildren
   '/api/downloads': typeof ApiDownloadsRouteWithChildren
   '/api/extract': typeof ApiExtractRoute
-  '/api/ai/format-advisor': typeof ApiAiFormatAdvisorRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/download/$downloadId': typeof ApiDownloadDownloadIdRoute
   '/api/downloads/completed': typeof ApiDownloadsCompletedRoute
@@ -74,7 +67,6 @@ export interface FileRoutesByTo {
   '/api/download': typeof ApiDownloadRouteWithChildren
   '/api/downloads': typeof ApiDownloadsRouteWithChildren
   '/api/extract': typeof ApiExtractRoute
-  '/api/ai/format-advisor': typeof ApiAiFormatAdvisorRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/download/$downloadId': typeof ApiDownloadDownloadIdRoute
   '/api/downloads/completed': typeof ApiDownloadsCompletedRoute
@@ -85,7 +77,6 @@ export interface FileRoutesById {
   '/api/download': typeof ApiDownloadRouteWithChildren
   '/api/downloads': typeof ApiDownloadsRouteWithChildren
   '/api/extract': typeof ApiExtractRoute
-  '/api/ai/format-advisor': typeof ApiAiFormatAdvisorRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/download/$downloadId': typeof ApiDownloadDownloadIdRoute
   '/api/downloads/completed': typeof ApiDownloadsCompletedRoute
@@ -97,7 +88,6 @@ export interface FileRouteTypes {
     | '/api/download'
     | '/api/downloads'
     | '/api/extract'
-    | '/api/ai/format-advisor'
     | '/api/auth/$'
     | '/api/download/$downloadId'
     | '/api/downloads/completed'
@@ -107,7 +97,6 @@ export interface FileRouteTypes {
     | '/api/download'
     | '/api/downloads'
     | '/api/extract'
-    | '/api/ai/format-advisor'
     | '/api/auth/$'
     | '/api/download/$downloadId'
     | '/api/downloads/completed'
@@ -117,7 +106,6 @@ export interface FileRouteTypes {
     | '/api/download'
     | '/api/downloads'
     | '/api/extract'
-    | '/api/ai/format-advisor'
     | '/api/auth/$'
     | '/api/download/$downloadId'
     | '/api/downloads/completed'
@@ -128,7 +116,6 @@ export interface RootRouteChildren {
   ApiDownloadRoute: typeof ApiDownloadRouteWithChildren
   ApiDownloadsRoute: typeof ApiDownloadsRouteWithChildren
   ApiExtractRoute: typeof ApiExtractRoute
-  ApiAiFormatAdvisorRoute: typeof ApiAiFormatAdvisorRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
 }
 
@@ -183,13 +170,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/ai/format-advisor': {
-      id: '/api/ai/format-advisor'
-      path: '/api/ai/format-advisor'
-      fullPath: '/api/ai/format-advisor'
-      preLoaderRoute: typeof ApiAiFormatAdvisorRouteImport
-      parentRoute: typeof rootRouteImport
-    }
   }
 }
 
@@ -222,7 +202,6 @@ const rootRouteChildren: RootRouteChildren = {
   ApiDownloadRoute: ApiDownloadRouteWithChildren,
   ApiDownloadsRoute: ApiDownloadsRouteWithChildren,
   ApiExtractRoute: ApiExtractRoute,
-  ApiAiFormatAdvisorRoute: ApiAiFormatAdvisorRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
 }
 export const routeTree = rootRouteImport

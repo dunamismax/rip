@@ -1,7 +1,10 @@
-import { ExtractRequestSchema, ExtractResponseSchema } from '@rip/contracts'
+import {
+  ErrorResponseSchema,
+  ExtractRequestSchema,
+  ExtractResponseSchema,
+} from '@rip/contracts'
 import { createFileRoute } from '@tanstack/react-router'
 import { json } from '@tanstack/react-start'
-import { Effect, Schema } from 'effect'
 import { requireSession } from '#/lib/auth'
 import { errorResponse, getClientIp, readValidatedJson } from '#/server/http'
 import { RateLimiter } from '#/server/rate-limiter'
@@ -18,31 +21,23 @@ export const Route = createFileRoute('/api/extract')({
 
           if (!extractLimiter.allow(getClientIp(request))) {
             return json(
-              {
+              ErrorResponseSchema.parse({
                 error: 'Too many requests. Please wait before trying again.',
-              },
+              }),
               {
                 status: 429,
               }
             )
           }
 
-          const metadata = await Effect.runPromise(
-            Effect.gen(function* () {
-              const payload = yield* Effect.tryPromise(() =>
-                readValidatedJson(request, ExtractRequestSchema, 'Invalid URL.')
-              )
-              return yield* Effect.tryPromise(() =>
-                extractMetadata(payload.url)
-              )
-            })
+          const payload = await readValidatedJson(
+            request,
+            ExtractRequestSchema,
+            'Invalid URL.'
           )
+          const metadata = await extractMetadata(payload.url)
 
-          const response = await Schema.encode(ExtractResponseSchema)({
-            metadata,
-          })
-
-          return json(response)
+          return json(ExtractResponseSchema.parse({ metadata }))
         } catch (error) {
           return errorResponse(error)
         }

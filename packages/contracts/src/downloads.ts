@@ -1,4 +1,4 @@
-import { Schema } from 'effect'
+import * as z from 'zod'
 
 export const audioExtensions = [
   'aac',
@@ -30,27 +30,25 @@ export const downloadStatuses = [
   'cancelled',
 ] as const
 
-const UrlString = Schema.String.pipe(
-  Schema.pattern(/^https?:\/\/.+/i),
-  Schema.annotations({
-    identifier: 'UrlString',
-    description: 'An absolute HTTP or HTTPS URL',
+const outputExtensions = [...audioExtensions, ...videoExtensions] as const
+
+const NonEmptyString = z.string().min(1)
+const NullableString = z.string().nullable()
+const NullableNumber = z.number().nullable()
+const NullableBoolean = z.boolean().nullable()
+const UrlString = z
+  .string()
+  .url()
+  .refine((value) => /^https?:\/\//i.test(value), {
+    message: 'An absolute HTTP or HTTPS URL',
   })
-)
 
-const NullableString = Schema.NullOr(Schema.String)
-const NullableNumber = Schema.NullOr(Schema.Number)
-const NullableBoolean = Schema.NullOr(Schema.Boolean)
+export const DownloadStatusSchema = z.enum(downloadStatuses)
 
-export const DownloadStatusSchema = Schema.Literal(...downloadStatuses)
+export const OutputExtensionSchema = z.enum(outputExtensions)
 
-export const OutputExtensionSchema = Schema.Literal(
-  ...audioExtensions,
-  ...videoExtensions
-)
-
-export const VideoFormatSchema = Schema.Struct({
-  formatId: Schema.NonEmptyString,
+export const VideoFormatSchema = z.object({
+  formatId: NonEmptyString,
   ext: OutputExtensionSchema,
   resolution: NullableString,
   filesize: NullableNumber,
@@ -60,14 +58,14 @@ export const VideoFormatSchema = Schema.Struct({
   fps: NullableNumber,
   tbr: NullableNumber,
   formatNote: NullableString,
-  hasVideo: Schema.Boolean,
-  hasAudio: Schema.Boolean,
-  outputExtensions: Schema.Array(OutputExtensionSchema),
+  hasVideo: z.boolean(),
+  hasAudio: z.boolean(),
+  outputExtensions: z.array(OutputExtensionSchema),
 })
 
-export const VideoMetadataSchema = Schema.Struct({
-  id: Schema.NonEmptyString,
-  title: Schema.NonEmptyString,
+export const VideoMetadataSchema = z.object({
+  id: NonEmptyString,
+  title: NonEmptyString,
   thumbnail: NullableString,
   duration: NullableNumber,
   uploader: NullableString,
@@ -75,96 +73,90 @@ export const VideoMetadataSchema = Schema.Struct({
   viewCount: NullableNumber,
   description: NullableString,
   webpageUrl: UrlString,
-  extractor: Schema.NonEmptyString,
-  formats: Schema.Array(VideoFormatSchema),
+  extractor: NonEmptyString,
+  formats: z.array(VideoFormatSchema),
 })
 
-export const DownloadProgressSchema = Schema.Struct({
-  downloadedBytes: Schema.Number,
+export const DownloadProgressSchema = z.object({
+  downloadedBytes: z.number(),
   totalBytes: NullableNumber,
   speed: NullableNumber,
   eta: NullableNumber,
-  percentage: Schema.Number,
+  percentage: z.number(),
 })
 
-export const DownloadItemSchema = Schema.Struct({
-  id: Schema.NonEmptyString,
-  userId: Schema.NonEmptyString,
+export const DownloadItemSchema = z.object({
+  id: NonEmptyString,
+  userId: NonEmptyString,
   url: UrlString,
-  title: Schema.NonEmptyString,
+  title: NonEmptyString,
   thumbnail: NullableString,
-  formatId: Schema.NonEmptyString,
+  formatId: NonEmptyString,
   ext: OutputExtensionSchema,
-  sourceExt: Schema.NullOr(OutputExtensionSchema),
+  sourceExt: OutputExtensionSchema.nullable(),
   hasVideo: NullableBoolean,
   hasAudio: NullableBoolean,
   outputPath: NullableString,
   status: DownloadStatusSchema,
   progress: DownloadProgressSchema,
-  createdAt: Schema.String,
-  updatedAt: Schema.String,
+  createdAt: z.string(),
+  updatedAt: z.string(),
   completedAt: NullableString,
   error: NullableString,
 })
 
-export const ExtractRequestSchema = Schema.Struct({
+export const ExtractRequestSchema = z.object({
   url: UrlString,
 })
 
-export const QueueDownloadRequestSchema = Schema.Struct({
+export const QueueDownloadRequestSchema = z.object({
   url: UrlString,
-  formatId: Schema.NonEmptyString,
-  title: Schema.NonEmptyString,
+  formatId: NonEmptyString,
+  title: NonEmptyString,
   thumbnail: NullableString,
   ext: OutputExtensionSchema,
-  sourceExt: Schema.NullOr(OutputExtensionSchema),
+  sourceExt: OutputExtensionSchema.nullable(),
   hasVideo: NullableBoolean,
   hasAudio: NullableBoolean,
 })
 
-export const ExtractResponseSchema = Schema.Struct({
+export const ExtractResponseSchema = z.object({
   metadata: VideoMetadataSchema,
 })
 
-export const QueueDownloadResponseSchema = Schema.Struct({
-  id: Schema.NonEmptyString,
+export const QueueDownloadResponseSchema = z.object({
+  id: NonEmptyString,
 })
 
-export const DownloadsResponseSchema = Schema.Struct({
-  downloads: Schema.Array(DownloadItemSchema),
+export const DownloadsResponseSchema = z.object({
+  downloads: z.array(DownloadItemSchema),
 })
 
-export const CancelDownloadResponseSchema = Schema.Struct({
-  status: Schema.Literal('cancelled'),
+export const CancelDownloadResponseSchema = z.object({
+  status: z.literal('cancelled'),
 })
 
-export const OkResponseSchema = Schema.Struct({
-  status: Schema.Literal('ok'),
+export const OkResponseSchema = z.object({
+  status: z.literal('ok'),
 })
 
-export const ErrorResponseSchema = Schema.Struct({
-  error: Schema.NonEmptyString,
+export const ErrorResponseSchema = z.object({
+  error: NonEmptyString,
 })
 
-export type DownloadStatus = Schema.Schema.Type<typeof DownloadStatusSchema>
-export type OutputExtension = Schema.Schema.Type<typeof OutputExtensionSchema>
-export type VideoFormat = Schema.Schema.Type<typeof VideoFormatSchema>
-export type VideoMetadata = Schema.Schema.Type<typeof VideoMetadataSchema>
-export type DownloadProgress = Schema.Schema.Type<typeof DownloadProgressSchema>
-export type DownloadItem = Schema.Schema.Type<typeof DownloadItemSchema>
-export type ExtractRequest = Schema.Schema.Type<typeof ExtractRequestSchema>
-export type QueueDownloadRequest = Schema.Schema.Type<
-  typeof QueueDownloadRequestSchema
->
-export type ExtractResponse = Schema.Schema.Type<typeof ExtractResponseSchema>
-export type QueueDownloadResponse = Schema.Schema.Type<
-  typeof QueueDownloadResponseSchema
->
-export type DownloadsResponse = Schema.Schema.Type<
-  typeof DownloadsResponseSchema
->
-export type CancelDownloadResponse = Schema.Schema.Type<
+export type DownloadStatus = z.infer<typeof DownloadStatusSchema>
+export type OutputExtension = z.infer<typeof OutputExtensionSchema>
+export type VideoFormat = z.infer<typeof VideoFormatSchema>
+export type VideoMetadata = z.infer<typeof VideoMetadataSchema>
+export type DownloadProgress = z.infer<typeof DownloadProgressSchema>
+export type DownloadItem = z.infer<typeof DownloadItemSchema>
+export type ExtractRequest = z.infer<typeof ExtractRequestSchema>
+export type QueueDownloadRequest = z.infer<typeof QueueDownloadRequestSchema>
+export type ExtractResponse = z.infer<typeof ExtractResponseSchema>
+export type QueueDownloadResponse = z.infer<typeof QueueDownloadResponseSchema>
+export type DownloadsResponse = z.infer<typeof DownloadsResponseSchema>
+export type CancelDownloadResponse = z.infer<
   typeof CancelDownloadResponseSchema
 >
-export type OkResponse = Schema.Schema.Type<typeof OkResponseSchema>
-export type ErrorResponse = Schema.Schema.Type<typeof ErrorResponseSchema>
+export type OkResponse = z.infer<typeof OkResponseSchema>
+export type ErrorResponse = z.infer<typeof ErrorResponseSchema>

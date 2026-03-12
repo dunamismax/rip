@@ -11,7 +11,7 @@ import {
   OkResponseSchema,
   QueueDownloadResponseSchema,
 } from '@rip/contracts'
-import { Schema } from 'effect'
+import type { ZodType } from 'zod'
 
 export class ApiError extends Error {
   constructor(
@@ -26,7 +26,7 @@ export class ApiError extends Error {
 async function requestJson<T>(
   input: RequestInfo | URL,
   init: RequestInit,
-  schema: Schema.Schema<T>
+  schema: ZodType<T>
 ) {
   const response = await fetch(input, {
     ...init,
@@ -39,17 +39,21 @@ async function requestJson<T>(
   const payload = await response.json().catch(() => ({}))
 
   if (!response.ok) {
-    const parsed = await Schema.decodeUnknownPromise(ErrorResponseSchema)(
-      payload
-    ).catch(() => null)
+    const parsed = await ErrorResponseSchema.safeParseAsync(payload)
 
     throw new ApiError(
       response.status,
-      parsed?.error ?? 'Request failed. Please try again.'
+      parsed.success ? parsed.data.error : 'Request failed. Please try again.'
     )
   }
 
-  return Schema.decodeUnknownPromise(schema)(payload)
+  const parsed = await schema.safeParseAsync(payload)
+
+  if (!parsed.success) {
+    throw new ApiError(response.status, 'Invalid server response.')
+  }
+
+  return parsed.data
 }
 
 export const api = {

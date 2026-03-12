@@ -4,7 +4,6 @@ import {
 } from '@rip/contracts'
 import { createFileRoute } from '@tanstack/react-router'
 import { json } from '@tanstack/react-start'
-import { Schema } from 'effect'
 import { requireSession } from '#/lib/auth'
 import { getDownloadManager } from '#/server/download-manager'
 import { errorResponse } from '#/server/http'
@@ -22,7 +21,7 @@ export const Route = createFileRoute('/api/download/$downloadId')({
 
           if (result === 'not_found') {
             return json(
-              await Schema.encode(ErrorResponseSchema)({
+              ErrorResponseSchema.parse({
                 error: 'Download not found.',
               }),
               {
@@ -33,7 +32,7 @@ export const Route = createFileRoute('/api/download/$downloadId')({
 
           if (result === 'not_cancellable') {
             return json(
-              await Schema.encode(ErrorResponseSchema)({
+              ErrorResponseSchema.parse({
                 error: 'Download can only be cancelled while queued or active.',
               }),
               {
@@ -43,7 +42,7 @@ export const Route = createFileRoute('/api/download/$downloadId')({
           }
 
           return json(
-            await Schema.encode(CancelDownloadResponseSchema)({
+            CancelDownloadResponseSchema.parse({
               status: 'cancelled',
             })
           )
