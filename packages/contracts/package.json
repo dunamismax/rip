@@ -1,0 +1,21 @@
+{
+  "name": "@rip/contracts",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json --noEmit",
+    "test": "echo \"No tests in @rip/contracts\"",
+    "lint": "biome check src",
+    "format": "biome format --write src",
+    "check": "biome check src && tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "effect": "^3.19.19"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2"
+  }
+}

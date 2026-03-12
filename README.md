@@ -1,100 +1,102 @@
 # rip
 
-`rip` is a self-hosted web app for downloading videos from `yt-dlp` supported sites. Paste a URL, inspect available formats, and queue downloads from a single FastAPI process that serves both the HTML UI and JSON API.
+`rip` is now a Bun + TypeScript monorepo for authenticated, self-hosted `yt-dlp` downloads.
 
-## Features
+## Stack
 
-- Metadata extraction through `yt-dlp`
-- Format selection before download
-- Output format selection with audio extraction or video remuxing
-- Concurrent download queue with cancellation
-- Download progress over JSON polling and `/api/ws`
-- Server-rendered HTML with plain CSS and minimal JavaScript
-- Local-first operation with files written to a configurable download directory
+- Runtime: Bun
+- Workspace: pnpm
+- App: TanStack Start + TanStack Router + TanStack Query
+- Domain contracts: Effect + Effect Schema
+- Auth: Better Auth
+- Database: PostgreSQL + Drizzle ORM
+- AI UX: TanStack AI
+- Observability: OpenTelemetry
+- Lint/format: Biome
+- Tests: Vitest
+
+## Workspace
+
+```text
+apps/web         TanStack Start app, API routes, downloader UI, auth, AI advisor
+packages/contracts  Shared Effect Schema contracts
+packages/db         Drizzle schema, client, and migrations
+```
 
 ## Prerequisites
 
-- Python 3.12+
-- [`uv`](https://docs.astral.sh/uv/) for dependency management
+- Bun 1.3+
+- pnpm 10+
+- PostgreSQL
 - `yt-dlp`
 - `ffmpeg`
 
 macOS example:
 
 ```bash
-brew install uv yt-dlp ffmpeg
+brew install bun pnpm yt-dlp ffmpeg postgresql
 ```
 
 ## Quick Start
 
 ```bash
-git clone https://github.com/dunamismax/rip.git
-cd rip
 cp .env.example .env
-uv sync
-uv run python -m rip doctor
-uv run python -m rip serve --reload
+pnpm install
+pnpm db:migrate
+pnpm dev
 ```
 
-Open `http://127.0.0.1:3000`.
+Open [http://127.0.0.1:3000](http://127.0.0.1:3000).
+
+## Environment
+
+Required:
+
+- `DATABASE_URL`
+- `BETTER_AUTH_SECRET`
+
+Important optional values:
+
+- `DOWNLOAD_DIR`
+- `MAX_CONCURRENT_DOWNLOADS`
+- `MAX_INCOMPLETE_DOWNLOADS`
+- `YTDLP_PATH`
+- `FFMPEG_PATH`
+- `AI_PROVIDER`
+- `OPENAI_API_KEY`
+- `OPENAI_MODEL`
+- `OTEL_EXPORTER_OTLP_ENDPOINT`
+
+The AI format advisor is disabled unless `AI_PROVIDER=openai`, `OPENAI_API_KEY`, and `OPENAI_MODEL` are set.
 
 ## Commands
 
 ```bash
-uv sync
-uv run python -m rip doctor
-uv run python -m rip serve --reload
-uv run pytest
-uv run python -m compileall rip tests
+pnpm dev
+pnpm build
+pnpm test
+pnpm check
+pnpm db:generate
+pnpm db:migrate
+pnpm db:push
+pnpm db:studio
 ```
 
-## Configuration
+## Features
 
-Environment variables are optional.
-
-| Variable | Default | Description |
-|---|---|---|
-| `HOST` | `127.0.0.1` | Bind host for the FastAPI server |
-| `PORT` | `3000` | Bind port for the FastAPI server |
-| `DOWNLOAD_DIR` | `~/Downloads/Rip` | Output directory for completed downloads |
-| `MAX_CONCURRENT_DOWNLOADS` | `3` | Maximum simultaneous `yt-dlp` processes |
-| `MAX_INCOMPLETE_DOWNLOADS` | `50` | Combined active + queued download cap |
-| `YTDLP_PATH` | `yt-dlp` | Path to the `yt-dlp` executable |
-| `FFMPEG_PATH` | `ffmpeg` | Path to the `ffmpeg` executable passed to `yt-dlp --ffmpeg-location` |
-| `TRUSTED_PROXY_HOSTS` | empty | Comma-separated proxy IPs allowed to supply `X-Forwarded-For` |
-
-When you pick an output format in the UI or API, audio targets use `yt-dlp --extract-audio` and video targets use `yt-dlp --remux-video`. Selecting the source format's native extension skips post-processing.
-
-## API
-
-| Method | Path | Purpose |
-|---|---|---|
-| `POST` | `/api/extract` | Extract metadata for a URL |
-| `POST` | `/api/download` | Queue a download |
-| `DELETE` | `/api/download/{id}` | Cancel a queued or active download |
-| `GET` | `/api/downloads` | List all known downloads |
-| `DELETE` | `/api/downloads/completed` | Remove finished downloads from memory |
-| `GET` | `/health` | Health check |
-| `WS` | `/api/ws` | Progress and snapshot updates |
+- Better Auth email/password sign-in
+- Persistent download queue stored in PostgreSQL
+- Format inspection and output remux/extract choices
+- Concurrent `yt-dlp` workers with cancellation
+- TanStack AI format advisor for choosing the right output
+- OpenTelemetry tracing around extract/download workflows
 
 ## Verification
 
 ```bash
-uv run python -m compileall rip tests
-uv run pytest
-```
-
-These checks do not require live network downloads. Use `uv run python -m rip doctor` before starting the app to confirm `yt-dlp`, `ffmpeg`, and the download directory are ready.
-
-## Architecture
-
-```text
-Browser
-  ↕ HTML forms + JSON API + WebSocket
-FastAPI app
-  ↕ asyncio subprocesses
-yt-dlp + ffmpeg
-  → DOWNLOAD_DIR
+pnpm test
+pnpm check
+pnpm build
 ```
 
 ## License
