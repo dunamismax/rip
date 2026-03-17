@@ -20,6 +20,7 @@ import { getDownloadManager } from './lib/download-manager'
 import { AppError, toAppError } from './lib/errors'
 import { readValidatedJson } from './lib/http'
 import { RateLimiter } from './lib/rate-limiter'
+import { resolveStaticAssetPath } from './lib/static-assets'
 import { extractMetadata } from './lib/ytdlp'
 
 const extractLimiter = new RateLimiter(10, 60_000)
@@ -249,10 +250,9 @@ export function createApp() {
 }
 
 async function readAsset(requestPath: string) {
-  const normalizedPath = requestPath === '/' ? '/index.html' : requestPath
-  const absolutePath = resolve(webDistRoot, `.${normalizedPath}`)
+  const absolutePath = resolveStaticAssetPath(webDistRoot, requestPath)
 
-  if (!absolutePath.startsWith(webDistRoot)) {
+  if (!absolutePath) {
     return null
   }
 

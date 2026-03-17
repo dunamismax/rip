@@ -243,17 +243,16 @@ class DownloadManager {
     }
 
     const args = buildDownloadArgs(payload)
-    const env = loadEnv()
-    const child = spawn(env.ytdlpPath, args, {
-      stdio: ['ignore', 'pipe', 'pipe'],
-    })
+    const activeProcess = await this.startProcess(row.id, args)
 
-    this.active.set(row.id, {
-      child,
-      cancelled: false,
-    })
+    if (!activeProcess) {
+      return
+    }
+
+    const { child } = activeProcess
 
     const stderrPromise = streamToString(child.stderr)
+    const exitPromise = onceExit(child)
 
     try {
       if (child.stdout) {
@@ -288,7 +287,7 @@ class DownloadManager {
     }
 
     try {
-      const exitCode = await onceExit(child)
+      const exitCode = await exitPromise
       const stderr = (await stderrPromise).trim()
       const active = this.active.get(row.id)
 
@@ -368,6 +367,8 @@ class DownloadManager {
       data: {
         status: 'completed',
         progressPercentage: 100,
+        progressSpeed: null,
+        progressEta: null,
         completedAt: new Date(),
       },
     })
@@ -379,6 +380,8 @@ class DownloadManager {
       data: {
         status: 'failed',
         error,
+        progressSpeed: null,
+        progressEta: null,
         completedAt: new Date(),
       },
     })
@@ -389,8 +392,39 @@ class DownloadManager {
       where: { id },
       data: {
         status: 'cancelled',
+        progressSpeed: null,
+        progressEta: null,
         completedAt: new Date(),
       },
+    })
+  }
+
+  private async startProcess(id: string, args: string[]) {
+    return this.mutex.run(async () => {
+      const current = await prisma.download.findUnique({
+        where: {
+          id,
+        },
+        select: {
+          status: true,
+        },
+      })
+
+      if (!current || current.status !== 'downloading') {
+        return null
+      }
+
+      const env = loadEnv()
+      const child = spawn(env.ytdlpPath, args, {
+        stdio: ['ignore', 'pipe', 'pipe'],
+      })
+      const activeProcess = {
+        child,
+        cancelled: false,
+      }
+
+      this.active.set(id, activeProcess)
+      return activeProcess
     })
   }
 
