@@ -3,30 +3,25 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts",
-    "./schema": "./src/schema.ts"
+    ".": "./src/index.ts"
   },
   "scripts": {
     "build": "tsc -p tsconfig.json --noEmit",
     "test": "echo \"No tests in @rip/db\"",
-    "lint": "biome check src drizzle.config.ts",
-    "format": "biome format --write src drizzle.config.ts",
-    "check": "biome check src drizzle.config.ts && tsc -p tsconfig.json --noEmit",
-    "db:generate": "drizzle-kit generate --config drizzle.config.ts",
-    "db:migrate": "drizzle-kit migrate --config drizzle.config.ts",
-    "db:push": "drizzle-kit push --config drizzle.config.ts",
-    "db:studio": "drizzle-kit studio --config drizzle.config.ts"
+    "lint": "biome check src prisma.config.ts",
+    "format": "biome format --write src prisma.config.ts",
+    "check": "biome check src prisma.config.ts && tsc -p tsconfig.json --noEmit",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:deploy": "prisma migrate deploy",
+    "db:studio": "prisma studio"
   },
   "dependencies": {
-    "@rip/contracts": "workspace:*",
-    "drizzle-orm": "^0.45.1",
-    "pg": "^8.16.3"
+    "@prisma/client": "^7.5.0"
   },
   "devDependencies": {
-    "@types/node": "^22.10.2",
-    "@types/pg": "^8.15.6",
-    "dotenv": "^17.3.1",
-    "drizzle-kit": "^0.31.9",
-    "typescript": "^5.7.2"
+    "@types/node": "^25.5.0",
+    "prisma": "^7.5.0",
+    "typescript": "^5.9.3"
   }
 }

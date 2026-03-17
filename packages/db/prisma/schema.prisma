@@ -1,0 +1,107 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum DownloadStatus {
+  queued
+  downloading
+  processing
+  completed
+  failed
+  cancelled
+}
+
+model User {
+  id            String    @id @default(uuid())
+  name          String
+  email         String    @unique
+  emailVerified Boolean   @default(false) @map("email_verified")
+  image         String?
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  accounts      Account[]
+  downloads     Download[]
+  sessions      Session[]
+
+  @@map("user")
+}
+
+model Session {
+  id        String   @id @default(uuid())
+  expiresAt DateTime @map("expires_at")
+  token     String   @unique
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  ipAddress String?  @map("ip_address")
+  userAgent String?  @map("user_agent")
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId], map: "session_user_id_idx")
+  @@map("session")
+}
+
+model Account {
+  id                     String    @id @default(uuid())
+  accountId              String    @map("account_id")
+  providerId             String    @map("provider_id")
+  userId                 String    @map("user_id")
+  accessToken            String?   @map("access_token")
+  refreshToken           String?   @map("refresh_token")
+  idToken                String?   @map("id_token")
+  accessTokenExpiresAt   DateTime? @map("access_token_expires_at")
+  refreshTokenExpiresAt  DateTime? @map("refresh_token_expires_at")
+  scope                  String?
+  password               String?
+  createdAt              DateTime  @default(now()) @map("created_at")
+  updatedAt              DateTime  @updatedAt @map("updated_at")
+  user                   User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId], map: "account_user_id_idx")
+  @@map("account")
+}
+
+model Verification {
+  id         String    @id @default(uuid())
+  identifier String
+  value      String
+  expiresAt  DateTime  @map("expires_at")
+  createdAt  DateTime? @default(now()) @map("created_at")
+  updatedAt  DateTime? @updatedAt @map("updated_at")
+
+  @@map("verification")
+}
+
+model Download {
+  id                      String         @id @default(uuid())
+  userId                  String         @map("user_id")
+  user                    User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  url                     String
+  title                   String
+  thumbnail               String?
+  formatId                String         @map("format_id")
+  ext                     String
+  sourceExt               String?        @map("source_ext")
+  hasVideo                Boolean?       @map("has_video")
+  hasAudio                Boolean?       @map("has_audio")
+  status                  DownloadStatus @default(queued)
+  progressDownloadedBytes Int            @default(0) @map("progress_downloaded_bytes")
+  progressTotalBytes      Int?           @map("progress_total_bytes")
+  progressSpeed           Int?           @map("progress_speed")
+  progressEta             Int?           @map("progress_eta")
+  progressPercentage      Int            @default(0) @map("progress_percentage")
+  outputPath              String?        @map("output_path")
+  error                   String?
+  createdAt               DateTime       @default(now()) @map("created_at")
+  updatedAt               DateTime       @updatedAt @map("updated_at")
+  completedAt             DateTime?      @map("completed_at")
+
+  @@index([userId], map: "download_user_id_idx")
+  @@index([status], map: "download_status_idx")
+  @@index([createdAt], map: "download_created_at_idx")
+  @@map("download")
+}

@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.4.5/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.4.7/schema.json",
   "vcs": {
     "enabled": true,
     "clientKind": "git",
@@ -10,9 +10,14 @@
     "includes": [
       "apps/**/*",
       "packages/**/*",
+      "tests/**/*",
+      "playwright.config.ts",
+      "README.md",
       "!**/dist/**/*",
+      "!**/coverage/**/*",
       "!**/.tanstack/**/*",
-      "!**/routeTree.gen.ts"
+      "!**/routeTree.gen.ts",
+      "!**/prisma/migrations/**/*"
     ]
   },
   "formatter": {
@@ -36,6 +41,9 @@
       },
       "style": {
         "useNodejsImportProtocol": "off"
+      },
+      "correctness": {
+        "noUnusedImports": "warn"
       }
     }
   },
@@ -45,6 +53,11 @@
       "jsxQuoteStyle": "double",
       "semicolons": "asNeeded",
       "trailingCommas": "es5"
+    }
+  },
+  "css": {
+    "parser": {
+      "tailwindDirectives": true
     }
   }
 }

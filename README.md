@@ -1,30 +1,32 @@
 # rip
 
-`rip` is a Bun + TypeScript monorepo for authenticated, self-hosted `yt-dlp` downloads.
+`rip` is a self-hosted `yt-dlp` control deck built on a split stack:
 
-## Stack
-
-- Runtime: Bun
-- Workspace: Bun
-- App: TanStack Start + TanStack Router + TanStack Query
-- Domain contracts: Zod
-- Auth: Better Auth
-- Database: PostgreSQL + Drizzle ORM
-- Observability: OpenTelemetry
-- Lint/format: Biome
-- Tests: Vitest
+- Frontend: Node.js + pnpm + TypeScript + Vite + React + TanStack Router + TanStack Query + TanStack Form + Zod + shadcn/ui + Radix UI + Biome + Vitest + Playwright
+- Backend: Hono + PostgreSQL + Prisma + Prisma Migrate + Better Auth + Zod
 
 ## Workspace
 
 ```text
-apps/web            TanStack Start app, API routes, downloader UI, and auth
-packages/contracts  Shared Zod contracts
-packages/db         Drizzle schema, client, and migrations
+apps/web            Vite React SPA
+apps/api            Hono API, Better Auth, download queue orchestration
+packages/contracts  Shared Zod contracts and API shapes
+packages/db         Prisma schema, client, and migrations
 ```
+
+## Features
+
+- Email/password auth with Better Auth
+- Persistent PostgreSQL-backed download queue
+- Format extraction and output remux/extract options via `yt-dlp`
+- Concurrent download workers with cancellation
+- SPA frontend with TanStack Router, Query, and Form
+- Vitest unit/component coverage and Playwright e2e smoke tests
 
 ## Prerequisites
 
-- Bun 1.3+
+- Node.js 20+
+- pnpm 10+
 - PostgreSQL
 - `yt-dlp`
 - `ffmpeg`
@@ -32,19 +34,21 @@ packages/db         Drizzle schema, client, and migrations
 macOS example:
 
 ```bash
-brew install bun yt-dlp ffmpeg postgresql
+brew install node pnpm yt-dlp ffmpeg postgresql
 ```
 
 ## Quick Start
 
 ```bash
 cp .env.example .env
-bun install
-bun run db:migrate
-bun run dev
+pnpm install
+pnpm db:migrate
+pnpm dev
 ```
 
-Open [http://127.0.0.1:3000](http://127.0.0.1:3000).
+Frontend: [http://127.0.0.1:3000](http://127.0.0.1:3000)
+
+Backend API: [http://127.0.0.1:3001](http://127.0.0.1:3001)
 
 ## Environment
 
@@ -53,42 +57,46 @@ Required:
 - `DATABASE_URL`
 - `BETTER_AUTH_SECRET`
 
-Important optional values:
+Useful defaults live in [.env.example](.env.example). The main variables are:
 
+- `APP_URL`
+- `API_URL`
+- `PORT`
 - `DOWNLOAD_DIR`
 - `MAX_CONCURRENT_DOWNLOADS`
 - `MAX_INCOMPLETE_DOWNLOADS`
 - `YTDLP_PATH`
 - `FFMPEG_PATH`
-- `OTEL_EXPORTER_OTLP_ENDPOINT`
+- `REQUEST_BODY_LIMIT_BYTES`
+- `COMPLETED_EXPIRY_SECONDS`
 
 ## Commands
 
 ```bash
-bun run dev
-bun run build
-bun run test
-bun run check
-bun run db:generate
-bun run db:migrate
-bun run db:push
-bun run db:studio
+pnpm dev
+pnpm build
+pnpm test
+pnpm test:e2e
+pnpm check
+pnpm db:generate
+pnpm db:migrate
+pnpm db:deploy
+pnpm db:studio
 ```
 
-## Features
+## Notes
 
-- Better Auth email/password sign-in
-- Persistent download queue stored in PostgreSQL
-- Format inspection and output remux/extract choices
-- Concurrent `yt-dlp` workers with cancellation
-- OpenTelemetry tracing around extract/download workflows
+- The Vite app proxies `/api/*` to Hono during local development.
+- In production, the Hono server serves the built SPA from `apps/web/dist`.
+- Prisma 7 uses `packages/db/prisma.config.ts` for datasource configuration.
 
 ## Verification
 
 ```bash
-bun run test
-bun run check
-bun run build
+pnpm check
+pnpm test
+pnpm test:e2e
+pnpm build
 ```
 
 ## License

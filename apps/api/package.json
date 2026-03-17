@@ -1,0 +1,30 @@
+{
+  "name": "@rip/api",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --watch --env-file ../../.env --import tsx src/index.ts",
+    "start": "node --env-file ../../.env --import tsx src/index.ts",
+    "build": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "format": "biome format --write src",
+    "lint": "biome check src",
+    "check": "biome check src && tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.19.11",
+    "@prisma/client": "^7.5.0",
+    "@rip/contracts": "workspace:*",
+    "@rip/db": "workspace:*",
+    "better-auth": "^1.5.5",
+    "hono": "^4.12.8",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.4.7",
+    "@types/node": "^25.5.0",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.0"
+  }
+}

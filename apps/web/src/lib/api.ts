@@ -2,6 +2,7 @@ import type {
   DownloadsResponse,
   ExtractRequest,
   QueueDownloadRequest,
+  SessionResponse,
 } from '@rip/contracts'
 import {
   CancelDownloadResponseSchema,
@@ -10,6 +11,7 @@ import {
   ExtractResponseSchema,
   OkResponseSchema,
   QueueDownloadResponseSchema,
+  SessionResponseSchema,
 } from '@rip/contracts'
 import type { ZodType } from 'zod'
 
@@ -29,6 +31,7 @@ async function requestJson<T>(
   schema: ZodType<T>
 ) {
   const response = await fetch(input, {
+    credentials: 'include',
     ...init,
     headers: {
       'content-type': 'application/json',
@@ -57,6 +60,16 @@ async function requestJson<T>(
 }
 
 export const api = {
+  getSession(): Promise<SessionResponse> {
+    return requestJson(
+      '/api/session',
+      {
+        method: 'GET',
+      },
+      SessionResponseSchema
+    )
+  },
+
   extract(payload: ExtractRequest) {
     return requestJson(
       '/api/extract',
@@ -79,7 +92,7 @@ export const api = {
     )
   },
 
-  listDownloads() {
+  listDownloads(): Promise<DownloadsResponse> {
     return requestJson(
       '/api/downloads',
       {
@@ -108,54 +121,4 @@ export const api = {
       OkResponseSchema
     )
   },
-}
-
-export function hasActiveDownloads(response: DownloadsResponse | undefined) {
-  return (
-    response?.downloads.some((item) =>
-      ['queued', 'downloading', 'processing'].includes(item.status)
-    ) ?? false
-  )
-}
-
-export function formatBytes(value: number | null | undefined) {
-  if (!value || value <= 0) {
-    return '0 B'
-  }
-
-  const units = ['B', 'KB', 'MB', 'GB', 'TB']
-  let size = value
-  let index = 0
-
-  while (size >= 1024 && index < units.length - 1) {
-    size /= 1024
-    index += 1
-  }
-
-  return `${size.toFixed(1)} ${units[index]}`
-}
-
-export function formatDuration(value: number | null | undefined) {
-  if (value === null || value === undefined) {
-    return '--'
-  }
-
-  const total = Math.max(0, Math.trunc(value))
-  const hours = Math.floor(total / 3600)
-  const minutes = Math.floor((total % 3600) / 60)
-  const seconds = total % 60
-
-  if (hours) {
-    return `${hours}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
-  }
-
-  return `${minutes}:${String(seconds).padStart(2, '0')}`
-}
-
-export function formatSpeed(value: number | null | undefined) {
-  if (!value) {
-    return '--'
-  }
-
-  return `${formatBytes(value)}/s`
 }
