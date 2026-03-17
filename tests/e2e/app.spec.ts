@@ -169,3 +169,56 @@ test('queues a mocked download from the dashboard', async ({ page }) => {
     page.getByRole('heading', { name: 'Example Session Clip' })
   ).toHaveCount(2)
 })
+
+test('clears stale inspection details after a failed re-inspect', async ({
+  page,
+}) => {
+  await page.route('**/api/session', async (route) => {
+    await route.fulfill({ json: sessionFixture })
+  })
+
+  await page.route('**/api/downloads', async (route) => {
+    await route.fulfill({
+      json: {
+        downloads: [],
+      },
+    })
+  })
+
+  let extractCount = 0
+
+  await page.route('**/api/extract', async (route) => {
+    extractCount += 1
+
+    if (extractCount === 1) {
+      await route.fulfill({ json: metadataFixture })
+      return
+    }
+
+    await route.fulfill({
+      status: 400,
+      json: {
+        error: 'Could not inspect this URL.',
+      },
+    })
+  })
+
+  await page.goto('/')
+
+  await page.getByLabel('Video URL').fill('https://example.com/watch?v=video-1')
+  await page.getByRole('button', { name: /inspect formats/i }).click()
+
+  await expect(page.getByText('Example Session Clip')).toBeVisible()
+  await expect(
+    page.getByRole('button', { name: /queue download/i })
+  ).toBeEnabled()
+
+  await page.getByLabel('Video URL').fill('https://example.com/watch?v=missing')
+  await page.getByRole('button', { name: /inspect formats/i }).click()
+
+  await expect(page.getByText('Could not inspect this URL.')).toBeVisible()
+  await expect(page.getByText('Example Session Clip')).not.toBeVisible()
+  await expect(
+    page.getByRole('button', { name: /queue download/i })
+  ).toBeHidden()
+})

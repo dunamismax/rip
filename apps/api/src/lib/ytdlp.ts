@@ -50,11 +50,22 @@ export async function extractMetadata(url: string) {
     }
   )
 
-  const [stdout, stderr, exitCode] = await Promise.all([
-    streamToString(child.stdout),
-    streamToString(child.stderr),
-    onceExit(child),
-  ])
+  let stdout = ''
+  let stderr = ''
+  let exitCode = 1
+
+  try {
+    ;[stdout, stderr, exitCode] = await Promise.all([
+      streamToString(child.stdout),
+      streamToString(child.stderr),
+      onceExit(child),
+    ])
+  } catch (error) {
+    throw new YtdlpError(
+      'yt-dlp could not be started. Check YTDLP_PATH and file permissions.',
+      error
+    )
+  }
 
   if (exitCode !== 0) {
     throw new YtdlpError(stderr.trim() || 'yt-dlp failed to extract metadata.')

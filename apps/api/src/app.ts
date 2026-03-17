@@ -18,7 +18,7 @@ import { loadEnv } from './env'
 import { auth, getSessionResponse, requireSession } from './lib/auth'
 import { getDownloadManager } from './lib/download-manager'
 import { AppError, toAppError } from './lib/errors'
-import { getClientIp, readValidatedJson } from './lib/http'
+import { readValidatedJson } from './lib/http'
 import { RateLimiter } from './lib/rate-limiter'
 import { extractMetadata } from './lib/ytdlp'
 
@@ -42,6 +42,10 @@ const assetContentTypes: Record<string, string> = {
   '.svg': 'image/svg+xml',
   '.txt': 'text/plain; charset=utf-8',
   '.webmanifest': 'application/manifest+json; charset=utf-8',
+  '.avif': 'image/avif',
+  '.webp': 'image/webp',
+  '.woff': 'font/woff',
+  '.woff2': 'font/woff2',
 }
 
 export function createApp() {
@@ -61,6 +65,10 @@ export function createApp() {
   )
 
   app.onError((error, _c) => {
+    if (!(error instanceof AppError)) {
+      console.error(error)
+    }
+
     const appError = toAppError(error)
     const payload = ErrorResponseSchema.parse({
       error: appError.message,
@@ -90,9 +98,9 @@ export function createApp() {
   })
 
   app.post('/api/extract', async (c) => {
-    await requireSession(c.req.raw)
+    const session = await requireSession(c.req.raw)
 
-    if (!extractLimiter.allow(getClientIp(c.req.raw))) {
+    if (!extractLimiter.allow(session.user.id)) {
       throw new AppError(
         429,
         'Too many requests. Please wait before trying again.'
@@ -116,7 +124,7 @@ export function createApp() {
   app.post('/api/download', async (c) => {
     const session = await requireSession(c.req.raw)
 
-    if (!downloadLimiter.allow(getClientIp(c.req.raw))) {
+    if (!downloadLimiter.allow(session.user.id)) {
       throw new AppError(
         429,
         'Too many requests. Please wait before trying again.'

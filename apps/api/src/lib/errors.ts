@@ -17,9 +17,5 @@ export function toAppError(
     return error
   }
 
-  if (error instanceof Error) {
-    return new AppError(500, error.message || fallbackMessage, error)
-  }
-
   return new AppError(500, fallbackMessage, error)
 }

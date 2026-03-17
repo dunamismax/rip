@@ -66,9 +66,10 @@ class DownloadManager {
       this.workers.push(this.worker(index))
     }
 
-    setInterval(() => {
+    const cleanupTimer = setInterval(() => {
       void this.cleanupExpiredCompleted().catch(() => undefined)
     }, 60_000)
+    cleanupTimer.unref?.()
   }
 
   async listDownloads(userId: string) {
@@ -286,27 +287,43 @@ class DownloadManager {
       child.kill('SIGTERM')
     }
 
-    const exitCode = await onceExit(child)
-    const stderr = (await stderrPromise).trim()
-    const active = this.active.get(row.id)
-    this.active.delete(row.id)
+    try {
+      const exitCode = await onceExit(child)
+      const stderr = (await stderrPromise).trim()
+      const active = this.active.get(row.id)
 
-    if (active?.cancelled) {
-      await this.updateCancelled(row.id)
-      this.notifyWorkers()
-      return
-    }
+      if (active?.cancelled) {
+        await this.updateCancelled(row.id)
+        return
+      }
 
-    if (exitCode === 0) {
-      await this.updateCompleted(row.id)
-    } else {
+      if (exitCode === 0) {
+        await this.updateCompleted(row.id)
+        return
+      }
+
       await this.updateFailed(
         row.id,
         stderr || `yt-dlp exited with code ${exitCode}.`
       )
-    }
+    } catch (error) {
+      const active = this.active.get(row.id)
 
-    this.notifyWorkers()
+      if (active?.cancelled) {
+        await this.updateCancelled(row.id)
+        return
+      }
+
+      await this.updateFailed(
+        row.id,
+        error instanceof Error
+          ? error.message
+          : 'yt-dlp failed before the download could start.'
+      )
+    } finally {
+      this.active.delete(row.id)
+      this.notifyWorkers()
+    }
   }
 
   private async updateProgress(
@@ -479,11 +496,9 @@ declare global {
 }
 
 export function getDownloadManager() {
-  const manager = globalThis.__ripDownloadManager ?? new DownloadManager()
-
-  if (process.env.NODE_ENV !== 'production') {
-    globalThis.__ripDownloadManager = manager
+  if (!globalThis.__ripDownloadManager) {
+    globalThis.__ripDownloadManager = new DownloadManager()
   }
 
-  return manager
+  return globalThis.__ripDownloadManager
 }

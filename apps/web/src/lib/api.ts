@@ -30,13 +30,17 @@ async function requestJson<T>(
   init: RequestInit,
   schema: ZodType<T>
 ) {
+  const headers = new Headers(init.headers)
+  headers.set('accept', 'application/json')
+
+  if (init.body && !headers.has('content-type')) {
+    headers.set('content-type', 'application/json')
+  }
+
   const response = await fetch(input, {
     credentials: 'include',
     ...init,
-    headers: {
-      'content-type': 'application/json',
-      ...(init.headers ?? {}),
-    },
+    headers,
   })
 
   const payload = await response.json().catch(() => ({}))

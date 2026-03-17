@@ -56,6 +56,15 @@ export function DashboardPage({
   const [outputExt, setOutputExt] = useState<OutputExtension | ''>('')
   const [extractError, setExtractError] = useState<string | null>(null)
 
+  function resetInspectionState() {
+    setMetadata(null)
+    setLastInspectedUrl('')
+    setSelectedFormatId('')
+    setOutputExt('')
+    setExtractError(null)
+    queueMutation.reset()
+  }
+
   const downloadsQuery = useQuery({
     queryKey: ['downloads'],
     queryFn: api.listDownloads,
@@ -69,9 +78,13 @@ export function DashboardPage({
 
   const extractMutation = useMutation({
     mutationFn: api.extract,
-    onSuccess: (response) => {
+    onMutate: () => {
+      resetInspectionState()
+    },
+    onSuccess: (response, variables) => {
       startTransition(() => {
         setMetadata(response.metadata)
+        setLastInspectedUrl(variables.url)
         setSelectedFormatId(response.metadata.formats[0]?.formatId ?? '')
         setOutputExt(response.metadata.formats[0]?.ext ?? '')
         setExtractError(null)
@@ -116,8 +129,7 @@ export function DashboardPage({
       url: '',
     },
     onSubmit: async ({ value }) => {
-      setLastInspectedUrl(value.url)
-      await extractMutation.mutateAsync({ url: value.url })
+      await extractMutation.mutateAsync({ url: value.url.trim() })
     },
   })
 
@@ -204,12 +216,7 @@ export function DashboardPage({
                   </CardDescription>
                 </div>
                 <Button
-                  onClick={() => {
-                    setMetadata(null)
-                    setSelectedFormatId('')
-                    setOutputExt('')
-                    setExtractError(null)
-                  }}
+                  onClick={resetInspectionState}
                   type="button"
                   variant="ghost"
                 >
@@ -308,7 +315,7 @@ export function DashboardPage({
                   <div className="grid gap-5 md:grid-cols-[220px_1fr]">
                     {metadata.thumbnail ? (
                       <img
-                        alt=""
+                        alt={`${metadata.title} thumbnail`}
                         className="aspect-video w-full rounded-[1.7rem] border border-border/70 object-cover shadow-sm"
                         loading="lazy"
                         src={metadata.thumbnail}
@@ -423,7 +430,11 @@ export function DashboardPage({
                     </div>
 
                     <Button
-                      disabled={!selectedFormat || queueMutation.isPending}
+                      disabled={
+                        !selectedFormat ||
+                        !lastInspectedUrl ||
+                        queueMutation.isPending
+                      }
                       onClick={() => {
                         if (!metadata || !selectedFormat) {
                           return
@@ -474,7 +485,9 @@ export function DashboardPage({
               <Button
                 disabled={
                   clearMutation.isPending ||
-                  !downloadsQuery.data?.downloads.length
+                  !deferredDownloads.some((item) =>
+                    ['completed', 'failed', 'cancelled'].includes(item.status)
+                  )
                 }
                 onClick={() => void clearMutation.mutate()}
                 type="button"
