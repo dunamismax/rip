@@ -3,8 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "node --watch --env-file ../../.env --import tsx src/index.ts",
-    "start": "node --env-file ../../.env --import tsx src/index.ts",
+    "dev": "if [ -f ../../.env ]; then exec node --watch --env-file ../../.env --import tsx src/index.ts; else exec node --watch --import tsx src/index.ts; fi",
+    "start": "if [ -f ../../.env ]; then exec node --env-file ../../.env --import tsx src/index.ts; else exec node --import tsx src/index.ts; fi",
     "build": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
     "format": "biome format --write src",

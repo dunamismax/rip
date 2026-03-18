@@ -18,6 +18,10 @@ This file is a living document. Every future agent or developer who touches this
 - Important local condition during review:
   - No PostgreSQL server was running on `127.0.0.1:5432` at the start of the review.
   - Database workflows were verified against a temporary local PostgreSQL instance on port `55432`, not against the default `.env.example` port.
+- Changes made in this maintenance pass:
+  - API startup scripts now load a repo-root `.env` only when it exists instead of failing hard when it does not.
+  - Prisma runtime fallback URL now matches `.env.example` and `packages/db/prisma.config.ts`.
+  - `README.md` and `BUILD.md` are both covered by root `pnpm lint`, `pnpm format`, and `pnpm check`.
 
 ## Project Baseline
 
@@ -159,18 +163,27 @@ These commands were actually executed successfully on 2026-03-18.
 | Command | Status | Why it is not fully verified here |
 | --- | --- | --- |
 | `cp .env.example .env` | Likely correct | Not run during review because verification used inline env vars and a temporary Postgres instance |
-| `pnpm dev` | Likely correct after real `.env` setup | Not run successfully as-is in this environment |
-| `pnpm --filter @rip/api dev` | Likely correct after real `.env` setup | Not run successfully as-is in this environment |
-| `pnpm --filter @rip/api start` | Likely correct after real `.env` setup | Verified to fail if root `.env` is missing |
+| `pnpm dev` | Likely correct | Not run in this maintenance pass; still depends on both API and web startup succeeding together |
+| `pnpm --filter @rip/api dev` | Likely correct | Not explicitly run in this maintenance pass, but it now uses the same optional-`.env` startup pattern as `start` |
 | `pnpm --filter @rip/web preview` | Likely correct | Not explicitly run |
 | `pnpm db:studio` | Likely correct | Not explicitly run |
 
+### Additional commands verified in this maintenance pass
+
+These commands were executed after the fixes above.
+
+| Purpose | Command | Result |
+| --- | --- | --- |
+| API start without repo-root `.env` | `env NODE_ENV=development APP_URL=http://127.0.0.1:3000 API_URL=http://127.0.0.1:3015 PORT=3015 DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:59999/rip BETTER_AUTH_SECRET=dev-secret-value-with-at-least-32-chars BETTER_AUTH_URL=http://127.0.0.1:3000 pnpm --filter @rip/api start` | Server started without `.env`; `curl http://127.0.0.1:3015/api/health` returned `{"status":"ok"}` |
+| Repo checks after docs/config updates | `pnpm check` | Passed |
+| Repo tests after docs/config updates | `pnpm test` | Passed |
+| Workspace build after docs/config updates | `pnpm build` | Passed |
+
 ### Verified failure / gotcha
 
-This was directly observed and should be treated as operationally important:
+This was directly observed before the startup-script fix and is retained here for historical context:
 
 - `pnpm --filter @rip/api start` failed with `node: ../../.env: not found` when `.env` was missing, even though equivalent environment variables were passed inline.
-- Root `pnpm dev` almost certainly has the same prerequisite because `apps/api/package.json` hardcodes `node --env-file ../../.env`.
 - `pnpm install --frozen-lockfile` printed a warning that build scripts for `@prisma/engines`, `esbuild`, and `prisma` were ignored and suggested `pnpm approve-builds`.
   - This did not block `pnpm db:generate`, `pnpm build`, or tests in this environment.
   - Treat it as a setup warning worth re-checking on a fresh machine.
@@ -216,12 +229,10 @@ Recommended local setup sequence:
 ### Documentation quality and conflicts
 
 - `README.md` is useful but should be treated as secondary to code for operational details.
-- There was no pre-existing `BUILD.md` before this review.
 - Important env/default conflict:
   - `.env.example` uses `postgres://postgres:postgres@127.0.0.1:5432/rip`
   - `packages/db/prisma.config.ts` fallback uses `postgresql://postgres:postgres@127.0.0.1:5432/rip`
-  - `packages/db/src/client.ts` fallback uses `postgresql://postgres@127.0.0.1:5432/rip`
-  - The missing password in `packages/db/src/client.ts` is inconsistent with the other two defaults.
+  - `packages/db/src/client.ts` now matches the password-bearing fallback used by Prisma config.
 
 ### CI reality
 
@@ -245,9 +256,6 @@ CI does not currently verify:
 
 ### Verified from direct inspection or command execution
 
-- API startup scripts hard-require a repo-root `.env` file.
-  - Source: `apps/api/package.json`
-  - Impact: exported env vars alone are not enough; startup fails fast if `.env` does not exist.
 - Backend "build" is only a typecheck.
   - Source: `apps/api/package.json`
   - Impact: `pnpm build` does not emit a compiled backend artifact; production-style runtime still needs source files, `tsx`, and dependencies.
@@ -278,8 +286,8 @@ CI does not currently verify:
 
 ### Technical debt / ambiguity
 
-- Environment defaults are not fully unified across `.env.example`, Prisma config, and runtime Prisma client fallback.
-- Operational startup depends on conventions that are not enforced by scripts beyond failing at runtime.
+- API startup portability now depends on POSIX shell conditionals inside `package.json` scripts.
+- `pnpm dev` still assumes a conventional repo-root `.env` setup for the normal two-process local workflow, even though API-only startup no longer requires it.
 - Queue lifecycle and retention policy are only partially defined:
   - DB rows can be cleared or expired.
   - Files on disk are retained indefinitely.
@@ -290,23 +298,20 @@ CI does not currently verify:
 ### Highest impact first
 
 1. Fix local/prod startup ergonomics around `.env`.
-   - Best outcome: make API scripts work with inline env vars or fail with a more intentional message.
-   - Minimum outcome: document the hard `.env` dependency in `README.md` and keep this file updated.
+   - Status: improved.
+   - API scripts now work with inline/exported env vars when the repo-root `.env` file is absent.
+   - Remaining work: decide whether to keep this shell-based approach or replace it with a dedicated startup wrapper for stronger cross-platform behavior.
 2. Add at least one real integration path.
    - Suggested first target: a backend integration test that boots against temporary PostgreSQL and exercises auth/session plus one protected route.
 3. Decide and implement download file retention/cleanup behavior.
    - Clarify whether "clear completed" should also remove files from disk.
-4. Unify database URL defaults.
-   - Resolve the mismatch between `packages/db/src/client.ts`, `packages/db/prisma.config.ts`, and `.env.example`.
-5. Clarify deployment model.
+4. Clarify deployment model.
    - If the API is expected to stay single-instance, say so explicitly.
    - If not, redesign queue claiming around database-safe locking/leases.
 
 ### Quick wins
 
-- Add a short startup preflight section to `README.md` once BUILD.md is merged.
-- Normalize database fallback URLs.
-- Add a note near `apps/api/package.json` scripts about the required root `.env`.
+- Keep `BUILD.md` in root repo checks so handoff drift is caught alongside README drift.
 - Add one command or script for bootstrapping local Postgres expectations.
 
 ### Deeper refactors
@@ -339,6 +344,8 @@ Follow this in order after opening the repo:
    - `ffmpeg -version`
    - `pg_isready -h 127.0.0.1 -p 5432`
 5. Create a real root `.env` before trusting API start scripts.
+   - No longer strictly required for startup itself.
+   - Still recommended for normal local development and `pnpm dev`.
 6. Run:
    - `pnpm install --frozen-lockfile`
    - `pnpm db:generate`
@@ -366,7 +373,7 @@ Follow this in order after opening the repo:
 
 If you need the safest immediate work, start here:
 
-- Unify and document env/database defaults.
+- Decide whether to replace the shell-based optional-`.env` startup logic with a dedicated wrapper.
 - Add a backend integration test using temporary PostgreSQL.
 - Decide whether `clear completed` should also remove files.
 

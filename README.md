@@ -41,7 +41,8 @@ brew install node pnpm yt-dlp ffmpeg postgresql
 
 ```bash
 cp .env.example .env
-pnpm install
+pnpm install --frozen-lockfile
+pnpm db:generate
 pnpm db:migrate
 pnpm dev
 ```
@@ -69,6 +70,12 @@ Useful defaults live in [.env.example](.env.example). The main variables are:
 - `FFMPEG_PATH`
 - `REQUEST_BODY_LIMIT_BYTES`
 - `COMPLETED_EXPIRY_SECONDS`
+
+## Startup Notes
+
+- `pnpm dev` starts both the API and the Vite web app.
+- The API will load a repo-root `.env` automatically when it exists.
+- If `.env` is absent, `pnpm --filter @rip/api dev` and `pnpm --filter @rip/api start` now work with inline/exported environment variables instead.
 
 ## Commands
 

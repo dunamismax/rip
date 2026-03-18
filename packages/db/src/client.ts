@@ -7,7 +7,8 @@ declare global {
 
 export function getPrisma() {
   const connectionString =
-    process.env.DATABASE_URL ?? 'postgresql://postgres@127.0.0.1:5432/rip'
+    process.env.DATABASE_URL ??
+    'postgresql://postgres:postgres@127.0.0.1:5432/rip'
 
   const prisma =
     globalThis.__ripPrisma ??
