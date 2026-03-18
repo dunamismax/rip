@@ -71,11 +71,7 @@ export async function extractMetadata(url: string) {
     throw new YtdlpError(stderr.trim() || 'yt-dlp failed to extract metadata.')
   }
 
-  try {
-    return mapMetadata(JSON.parse(stdout))
-  } catch (error) {
-    throw new YtdlpError('Failed to parse yt-dlp output.', error)
-  }
+  return mapMetadata(parseMetadataOutput(stdout, stderr))
 }
 
 export function buildDownloadArgs(payload: QueueDownloadRequest) {
@@ -220,14 +216,17 @@ function buildOutputArgs(options: {
   return ['--remux-video', normalizedExt]
 }
 
-function mapMetadata(raw: Record<string, unknown>): VideoMetadata {
+export function mapMetadata(raw: Record<string, unknown>): VideoMetadata {
   const formats = Array.isArray(raw.formats)
     ? raw.formats
         .filter(
           (entry): entry is Record<string, unknown> =>
             Boolean(entry) && typeof entry === 'object'
         )
-        .map(mapFormat)
+        .flatMap((entry) => {
+          const format = mapFormat(entry)
+          return format ? [format] : []
+        })
         .filter(
           (format) =>
             format.formatId !== 'storyboard' &&
@@ -258,26 +257,102 @@ function mapFormat(raw: Record<string, unknown>) {
   const hasVideo = Boolean(vcodec && vcodec !== 'none')
   const hasAudio = Boolean(acodec && acodec !== 'none')
   const ext = asString(raw.ext) || 'mp4'
+  const formatId = asString(raw.format_id) || ''
 
-  return {
-    formatId: asString(raw.format_id) || '',
-    ext: validateOutputExtension(ext),
-    resolution: asNullableString(raw.resolution),
-    filesize: asNullableNumber(raw.filesize),
-    filesizeApprox: asNullableNumber(raw.filesize_approx),
-    vcodec: hasVideo ? vcodec : null,
-    acodec: hasAudio ? acodec : null,
-    fps: asNullableNumber(raw.fps),
-    tbr: asNullableNumber(raw.tbr),
-    formatNote: asNullableString(raw.format_note),
-    hasVideo,
-    hasAudio,
-    outputExtensions: outputExtensions({
-      sourceExt: ext,
+  if (!formatId) {
+    return null
+  }
+
+  try {
+    const normalizedExt = validateOutputExtension(ext)
+
+    return {
+      formatId,
+      ext: normalizedExt,
+      resolution: asNullableString(raw.resolution),
+      filesize: asNullableNumber(raw.filesize),
+      filesizeApprox: asNullableNumber(raw.filesize_approx),
+      vcodec: hasVideo ? vcodec : null,
+      acodec: hasAudio ? acodec : null,
+      fps: asNullableNumber(raw.fps),
+      tbr: asNullableNumber(raw.tbr),
+      formatNote: asNullableString(raw.format_note),
       hasVideo,
       hasAudio,
-    }),
+      outputExtensions: outputExtensions({
+        sourceExt: normalizedExt,
+        hasVideo,
+        hasAudio,
+      }),
+    }
+  } catch (error) {
+    if (
+      error instanceof AppError &&
+      error.message.startsWith('Unsupported output format')
+    ) {
+      return null
+    }
+
+    throw error
   }
+}
+
+export function parseMetadataOutput(stdout: string, stderr = '') {
+  const normalizedStdout = stdout.trim()
+  const normalizedStderr = stderr.trim()
+
+  if (!normalizedStdout) {
+    throw new YtdlpError(
+      normalizedStderr || 'yt-dlp did not return any metadata.'
+    )
+  }
+
+  for (const candidate of buildJsonCandidates(normalizedStdout)) {
+    try {
+      const parsed = JSON.parse(candidate)
+
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        return parsed as Record<string, unknown>
+      }
+    } catch {
+      // Keep trying narrower candidates below.
+    }
+  }
+
+  if (normalizedStdout === 'null') {
+    throw new YtdlpError(
+      normalizedStderr || 'yt-dlp could not extract metadata for this URL.'
+    )
+  }
+
+  throw new YtdlpError(
+    normalizedStderr || 'yt-dlp returned an unexpected metadata payload.'
+  )
+}
+
+function buildJsonCandidates(stdout: string) {
+  const candidates = new Set<string>([stdout])
+  const firstBrace = stdout.indexOf('{')
+  const lastBrace = stdout.lastIndexOf('}')
+
+  if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+    candidates.add(stdout.slice(firstBrace, lastBrace + 1))
+  }
+
+  const lines = stdout
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index]
+
+    if (line?.startsWith('{')) {
+      candidates.add(lines.slice(index).join('\n'))
+    }
+  }
+
+  return candidates
 }
 
 function asString(value: unknown) {

@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { buildDownloadArgs, parseProgressLine } from './ytdlp'
+import {
+  buildDownloadArgs,
+  mapMetadata,
+  parseMetadataOutput,
+  parseProgressLine,
+} from './ytdlp'
 
 describe('ytdlp helpers', () => {
   it('includes ffmpeg location and remux arguments for video outputs', () => {
@@ -44,6 +49,56 @@ describe('ytdlp helpers', () => {
       speed: 256,
       eta: 5,
       percentage: 50,
+    })
+  })
+
+  it('extracts a JSON object when yt-dlp prefixes stdout with extra lines', () => {
+    expect(
+      parseMetadataOutput(
+        [
+          '[debug] Optional plugin loaded',
+          '{"id":"abc123","title":"Example","formats":[]}',
+        ].join('\n')
+      )
+    ).toEqual({
+      id: 'abc123',
+      title: 'Example',
+      formats: [],
+    })
+  })
+
+  it('reports a clearer extractor error when yt-dlp returns null', () => {
+    expect(() => parseMetadataOutput('null')).toThrow(
+      'yt-dlp could not extract metadata for this URL.'
+    )
+  })
+
+  it('skips unsupported source formats instead of failing the whole metadata response', () => {
+    const parsed = mapMetadata({
+      id: 'abc123',
+      title: 'Example',
+      webpage_url: 'https://example.com/watch?v=abc123',
+      extractor_key: 'Generic',
+      formats: [
+        {
+          format_id: 'page',
+          ext: 'mhtml',
+          vcodec: 'none',
+          acodec: 'none',
+        },
+        {
+          format_id: '18',
+          ext: 'mp4',
+          vcodec: 'avc1',
+          acodec: 'mp4a',
+        },
+      ],
+    })
+
+    expect(parsed.formats).toHaveLength(1)
+    expect(parsed.formats[0]).toMatchObject({
+      formatId: '18',
+      ext: 'mp4',
     })
   })
 })
